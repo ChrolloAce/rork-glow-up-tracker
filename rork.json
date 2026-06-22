@@ -1,0 +1,10 @@
+{
+  "$schema": "https://rork.com/schema/rork.json",
+  "apps": [
+    {
+      "name": "Glow Up",
+      "path": "ios",
+      "framework": "swift"
+    }
+  ]
+}
