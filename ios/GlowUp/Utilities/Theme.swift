@@ -109,40 +109,32 @@ extension View {
 
     @ViewBuilder
     func adaptiveGlass(in shape: some Shape = .capsule) -> some View {
-        if #available(iOS 26.0, *) {
-            self.glassEffect(.regular.interactive(), in: shape)
-        } else {
-            self
-                .background {
-                    ZStack {
-                        shape.fill(.ultraThinMaterial)
-                        shape.fill(Color.white.opacity(0.5))
-                    }
+        self
+            .background {
+                ZStack {
+                    shape.fill(.ultraThinMaterial)
+                    shape.fill(Color.white.opacity(0.5))
                 }
-                .clipShape(shape)
-                .overlay(
-                    shape.stroke(Theme.pink.opacity(0.3), lineWidth: 1)
-                )
-        }
+            }
+            .clipShape(shape)
+            .overlay(
+                shape.stroke(Theme.pink.opacity(0.3), lineWidth: 1)
+            )
     }
 
     @ViewBuilder
     func adaptiveGlassTinted(_ color: Color, in shape: some Shape = .capsule) -> some View {
-        if #available(iOS 26.0, *) {
-            self.glassEffect(.regular.tint(color).interactive(), in: shape)
-        } else {
-            self
-                .background {
-                    ZStack {
-                        shape.fill(.ultraThinMaterial)
-                        shape.fill(color.opacity(0.35))
-                    }
+        self
+            .background {
+                ZStack {
+                    shape.fill(.ultraThinMaterial)
+                    shape.fill(color.opacity(0.35))
                 }
-                .clipShape(shape)
-                .overlay(
-                    shape.stroke(color.opacity(0.55), lineWidth: 1)
-                )
-        }
+            }
+            .clipShape(shape)
+            .overlay(
+                shape.stroke(color.opacity(0.55), lineWidth: 1)
+            )
     }
 
     @ViewBuilder

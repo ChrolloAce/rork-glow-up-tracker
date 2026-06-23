@@ -1,7 +1,7 @@
 import SwiftUI
 import Foundation
 
-nonisolated enum TreatmentType: String, CaseIterable, Identifiable, Codable, Sendable {
+enum TreatmentType: String, CaseIterable, Identifiable, Codable, Sendable {
     case nails = "Nails"
     case lashes = "Lashes"
     case shaving = "Shaving"
@@ -43,7 +43,7 @@ nonisolated enum TreatmentType: String, CaseIterable, Identifiable, Codable, Sen
     }
 }
 
-nonisolated enum RepeatFrequency: String, CaseIterable, Identifiable, Codable, Sendable {
+enum RepeatFrequency: String, CaseIterable, Identifiable, Codable, Sendable {
     case none = "None"
     case weekly = "Weekly"
     case biweekly = "Every 2 weeks"
@@ -53,7 +53,7 @@ nonisolated enum RepeatFrequency: String, CaseIterable, Identifiable, Codable, S
     var id: String { rawValue }
 }
 
-nonisolated enum TreatmentStatus: String, Codable, Sendable {
+enum TreatmentStatus: String, Codable, Sendable {
     case upToDate = "Up to date"
     case dueSoon = "Due soon"
     case overdue = "Overdue"
@@ -85,7 +85,7 @@ struct BeautyTreatment: Identifiable, Codable {
     var calendarEventID: String? = nil
 }
 
-nonisolated enum ChecklistCategory: String, CaseIterable, Identifiable, Codable, Sendable {
+enum ChecklistCategory: String, CaseIterable, Identifiable, Codable, Sendable {
     case face = "Face"
     case body = "Body"
     case hair = "Hair"

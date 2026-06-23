@@ -146,72 +146,7 @@ struct HomeView: View {
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 8) {
                     ForEach(0..<viewModel.totalDays, id: \.self) { index in
-                        let dayNum = index + 1
-                        let isSelected = index == (selectedDayIndex ?? 0)
-                        let isCompleted = index < viewModel.currentDay - 1
-                        let isCurrent = index == viewModel.currentDay - 1
-
-                        Button {
-                            let generator = UIImpactFeedbackGenerator(style: .light)
-                            generator.impactOccurred()
-                            withAnimation(.snappy(duration: 0.3)) {
-                                selectedDayIndex = index
-                            }
-                            dayScrollTrigger += 1
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text(isCurrent ? "TODAY" : " ")
-                                    .font(.system(size: 8, weight: .heavy))
-                                    .tracking(0.8)
-                                    .foregroundStyle(isCurrent ? (isSelected ? .white : Theme.pink) : .clear)
-
-                                VStack(spacing: 4) {
-                                    Text("\(dayNum)")
-                                        .font(.system(size: isSelected ? 18 : 14, weight: isSelected ? .bold : .medium))
-                                        .foregroundStyle(
-                                            isSelected ? .white
-                                            : isCurrent ? Theme.pink
-                                            : isCompleted ? Theme.pink
-                                            : Theme.textTertiary
-                                        )
-
-                                    if isCurrent {
-                                        Circle()
-                                            .fill(isSelected ? .white : Theme.pink)
-                                            .frame(width: 5, height: 5)
-                                    } else if isCompleted {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 8, weight: .bold))
-                                            .foregroundStyle(isSelected ? .white : Theme.pink.opacity(0.7))
-                                    } else {
-                                        Circle()
-                                            .fill(Theme.textTertiary.opacity(0.25))
-                                            .frame(width: 5, height: 5)
-                                    }
-                                }
-                                .frame(width: 44, height: 50)
-                                .background {
-                                    if isSelected {
-                                        Group {
-                                            if #available(iOS 26.0, *) {
-                                                Color.clear
-                                                    .glassEffect(.regular.tint(Theme.pink).interactive(), in: .rect(cornerRadius: 14))
-                                            } else {
-                                                RoundedRectangle(cornerRadius: 14)
-                                                    .fill(Theme.pink)
-                                            }
-                                        }
-                                    } else if isCurrent {
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Theme.pink, lineWidth: 1.5)
-                                            .background(Theme.pink.opacity(0.08), in: .rect(cornerRadius: 14))
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Theme.pink.opacity(0.15), lineWidth: 1)
-                                    }
-                                }
-                            }
-                        }
+                        dayCell(index: index)
                     }
                 }
                 .scrollTargetLayout()
@@ -232,6 +167,78 @@ struct HomeView: View {
             }
             .contentMargins(.horizontal, 20)
             .scrollIndicators(.hidden)
+        }
+    }
+
+    private func dayCell(index: Int) -> some View {
+        let dayNum = index + 1
+        let isSelected = index == (selectedDayIndex ?? 0)
+        let isCompleted = index < viewModel.currentDay - 1
+        let isCurrent = index == viewModel.currentDay - 1
+
+        return Button {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            withAnimation(.snappy(duration: 0.3)) {
+                selectedDayIndex = index
+            }
+            dayScrollTrigger += 1
+        } label: {
+            VStack(spacing: 4) {
+                Text(isCurrent ? "TODAY" : " ")
+                    .font(.system(size: 8, weight: .heavy))
+                    .tracking(0.8)
+                    .foregroundStyle(isCurrent ? (isSelected ? Color.white : Theme.pink) : Color.clear)
+
+                VStack(spacing: 4) {
+                    Text("\(dayNum)")
+                        .font(.system(size: isSelected ? 18 : 14, weight: isSelected ? .bold : .medium))
+                        .foregroundStyle(dayNumberColor(isSelected: isSelected, isCurrent: isCurrent, isCompleted: isCompleted))
+
+                    dayIndicator(isSelected: isSelected, isCurrent: isCurrent, isCompleted: isCompleted)
+                }
+                .frame(width: 44, height: 50)
+                .background { dayCellBackground(isSelected: isSelected, isCurrent: isCurrent) }
+            }
+        }
+    }
+
+    private func dayNumberColor(isSelected: Bool, isCurrent: Bool, isCompleted: Bool) -> Color {
+        if isSelected { return .white }
+        if isCurrent { return Theme.pink }
+        if isCompleted { return Theme.pink }
+        return Theme.textTertiary
+    }
+
+    @ViewBuilder
+    private func dayIndicator(isSelected: Bool, isCurrent: Bool, isCompleted: Bool) -> some View {
+        if isCurrent {
+            Circle()
+                .fill(isSelected ? Color.white : Theme.pink)
+                .frame(width: 5, height: 5)
+        } else if isCompleted {
+            Image(systemName: "checkmark")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(isSelected ? Color.white : Theme.pink.opacity(0.7))
+        } else {
+            Circle()
+                .fill(Theme.textTertiary.opacity(0.25))
+                .frame(width: 5, height: 5)
+        }
+    }
+
+    @ViewBuilder
+    private func dayCellBackground(isSelected: Bool, isCurrent: Bool) -> some View {
+        if isSelected {
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Theme.pink)
+        } else if isCurrent {
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Theme.pink, lineWidth: 1.5)
+                .background(Theme.pink.opacity(0.08), in: .rect(cornerRadius: 14))
+        } else {
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Theme.pink.opacity(0.15), lineWidth: 1)
         }
     }
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-nonisolated enum HabitCategory: String, CaseIterable, Identifiable, Codable, Sendable {
+enum HabitCategory: String, CaseIterable, Identifiable, Codable, Sendable {
     case skincare = "Skincare Routine"
     case water = "Water Intake"
     case lymphatic = "Lymphatic Drainage"

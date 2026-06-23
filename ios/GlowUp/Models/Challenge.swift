@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// How a challenge card's image area should be rendered until real artwork is supplied.
-nonisolated enum ImageSlotLayout: String, Codable, Sendable {
+enum ImageSlotLayout: String, Codable, Sendable {
     case hero        // one large hero image
     case collage     // a 4-image collage
     case illustration // soft illustrated artwork
@@ -9,13 +9,13 @@ nonisolated enum ImageSlotLayout: String, Codable, Sendable {
 }
 
 /// A single image placeholder slot. `assetName` is nil until the user supplies artwork.
-nonisolated struct ImageSlot: Codable, Sendable, Hashable, Identifiable {
+struct ImageSlot: Codable, Sendable, Hashable, Identifiable {
     var id: String = UUID().uuidString
     var assetName: String? = nil
     var caption: String? = nil
 }
 
-nonisolated enum ChallengeDifficulty: String, Codable, Sendable, CaseIterable {
+enum ChallengeDifficulty: String, Codable, Sendable, CaseIterable {
     case beginner = "Beginner"
     case beginnerIntermediate = "Beginner / Intermediate"
     case intermediate = "Intermediate"
@@ -33,7 +33,7 @@ nonisolated enum ChallengeDifficulty: String, Codable, Sendable, CaseIterable {
 
 /// A reusable, data-driven challenge definition. Add new entries to
 /// `ChallengeCatalog.popular` to surface new challenges — the UI is fully dynamic.
-nonisolated struct Challenge: Identifiable, Codable, Sendable, Hashable {
+struct Challenge: Identifiable, Codable, Sendable, Hashable {
     var id: String
     var name: String
     var durationDays: Int
@@ -65,7 +65,7 @@ nonisolated struct Challenge: Identifiable, Codable, Sendable, Hashable {
     }
 }
 
-nonisolated enum ChallengeCatalog {
+enum ChallengeCatalog {
     static let popular: [Challenge] = [
         Challenge(
             id: "75-soft",

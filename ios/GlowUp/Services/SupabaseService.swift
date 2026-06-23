@@ -17,8 +17,25 @@ import Foundation
 //   create policy "anon read" on public.glow_chat_messages for select using (true);
 //   create policy "anon insert" on public.glow_chat_messages for insert with check (true);
 //
+// Then add your credentials to the app's Info.plist as string keys:
+//   EXPO_PUBLIC_SUPABASE_URL       = https://YOUR-PROJECT.supabase.co
+//   EXPO_PUBLIC_SUPABASE_ANON_KEY  = your-anon-key
+// Until then the app runs fine; the live chat simply reports "not configured".
 
-nonisolated struct SupabaseChatRow: Codable, Sendable {
+/// Lightweight configuration lookup. Reads values from the app's Info.plist so
+/// Supabase credentials can be supplied without hardcoding them in source.
+enum Config {
+    static let allValues: [String: String] = {
+        guard let dict = Bundle.main.infoDictionary else { return [:] }
+        var result: [String: String] = [:]
+        for (key, value) in dict {
+            if let string = value as? String { result[key] = string }
+        }
+        return result
+    }()
+}
+
+struct SupabaseChatRow: Codable, Sendable {
     let id: String
     let username: String
     let avatar: String
@@ -27,20 +44,20 @@ nonisolated struct SupabaseChatRow: Codable, Sendable {
     let created_at: String
 }
 
-nonisolated struct SupabaseChatInsert: Codable, Sendable {
+struct SupabaseChatInsert: Codable, Sendable {
     let username: String
     let avatar: String
     let age: Int
     let message: String
 }
 
-nonisolated enum SupabaseError: Error, Sendable {
+enum SupabaseError: Error, Sendable {
     case missingConfig
     case invalidURL
     case badResponse(Int, String)
 }
 
-nonisolated final class SupabaseService: Sendable {
+final class SupabaseService: Sendable {
     static let shared = SupabaseService()
 
     private let table = "glow_chat_messages"
