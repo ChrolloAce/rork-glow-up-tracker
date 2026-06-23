@@ -9,6 +9,8 @@ struct ProfileView: View {
     @State private var calendarSync = CalendarSyncService.shared
     @State private var isImporting: Bool = false
     @State private var importToast: String? = nil
+    @State private var showLogoutConfirm: Bool = false
+    @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding: Bool = true
 
     private let skinTypes = ["Dry", "Oily", "Combination", "Sensitive", "Normal"]
 
@@ -25,6 +27,7 @@ struct ProfileView: View {
                     notificationsCard
                     connectionsCard
                     aboutCard
+                    logoutButton
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
@@ -47,6 +50,37 @@ struct ProfileView: View {
                 )
             }
         }
+        .confirmationDialog("Log out?", isPresented: $showLogoutConfirm, titleVisibility: .visible) {
+            Button("Log Out & Restart Onboarding", role: .destructive) {
+                viewModel.saveAll()
+                withAnimation { didCompleteOnboarding = false }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You'll go back to the beginning of onboarding. Your data is kept.")
+        }
+    }
+
+    private var logoutButton: some View {
+        Button(role: .destructive) {
+            showLogoutConfirm = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 15, weight: .semibold))
+                Text("Log Out")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .foregroundStyle(Theme.pinkDeep)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Theme.pinkDeep.opacity(0.4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 4)
     }
 
     private var profileHeader: some View {
