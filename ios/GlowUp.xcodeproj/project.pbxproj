@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		15BE94AC6790AE34D9F0C207 /* SuperwallKit in Frameworks */ = {isa = PBXBuildFile; productRef = 40905C9DE6A199BE2FDD16D2 /* SuperwallKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		105FC58A2E9EAD3200EA8BCF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -32,16 +36,22 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		105FC57C2E9EAD3100EA8BCF /* GlowUp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = GlowUp;
 			sourceTree = "<group>";
 		};
 		105FC58C2E9EAD3200EA8BCF /* GlowUpTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = GlowUpTests;
 			sourceTree = "<group>";
 		};
 		105FC5962E9EAD3200EA8BCF /* GlowUpUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = GlowUpUITests;
 			sourceTree = "<group>";
 		};
@@ -52,6 +62,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				15BE94AC6790AE34D9F0C207 /* SuperwallKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +123,7 @@
 			);
 			name = GlowUp;
 			packageProductDependencies = (
+				40905C9DE6A199BE2FDD16D2 /* SuperwallKit */,
 			);
 			productName = GlowUp;
 			productReference = 105FC57A2E9EAD3100EA8BCF /* GlowUp.app */;
@@ -134,8 +146,6 @@
 				105FC58C2E9EAD3200EA8BCF /* GlowUpTests */,
 			);
 			name = GlowUpTests;
-			packageProductDependencies = (
-			);
 			productName = GlowUpTests;
 			productReference = 105FC5892E9EAD3200EA8BCF /* GlowUpTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -157,8 +167,6 @@
 				105FC5962E9EAD3200EA8BCF /* GlowUpUITests */,
 			);
 			name = GlowUpUITests;
-			packageProductDependencies = (
-			);
 			productName = GlowUpUITests;
 			productReference = 105FC5932E9EAD3200EA8BCF /* GlowUpUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -195,6 +203,9 @@
 			);
 			mainGroup = 105FC5712E9EAD3100EA8BCF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C040C6193D90BCD0333E7B63 /* XCRemoteSwiftPackageReference "Superwall-iOS" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 105FC57B2E9EAD3100EA8BCF /* Products */;
 			projectDirPath = "";
@@ -416,7 +427,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.prayerlock.glowup;
+				PRODUCT_BUNDLE_IDENTIFIER = com-glowup;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -458,7 +469,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.prayerlock.glowup;
+				PRODUCT_BUNDLE_IDENTIFIER = com-glowup;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -484,7 +495,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.prayerlock.glowup.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com-glowup.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -506,7 +517,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.prayerlock.glowup.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com-glowup.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -526,7 +537,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.prayerlock.glowup.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = com-glowup.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -546,7 +557,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.prayerlock.glowup.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = com-glowup.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -598,6 +609,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C040C6193D90BCD0333E7B63 /* XCRemoteSwiftPackageReference "Superwall-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/superwall/Superwall-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		40905C9DE6A199BE2FDD16D2 /* SuperwallKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C040C6193D90BCD0333E7B63 /* XCRemoteSwiftPackageReference "Superwall-iOS" */;
+			productName = SuperwallKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 105FC5722E9EAD3100EA8BCF /* Project object */;
 }
