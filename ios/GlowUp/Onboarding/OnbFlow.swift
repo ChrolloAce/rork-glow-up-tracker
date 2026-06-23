@@ -42,7 +42,7 @@ let sampleChallenges: [OnbChallenge] = [
 // MARK: - Steps
 
 enum Step: Int, CaseIterable {
-    case welcome1, welcome2, welcome3, welcome4
+    case welcome1, globe, welcome2, welcome3, welcome4
     case name, hearAbout, why, idealDay, biggestChallenge, findingChallenge
     case selectChallenge, challengeDetail
     case startDate, length, saveProgress, rating
@@ -52,7 +52,7 @@ enum Step: Int, CaseIterable {
     /// Progress only shown during the "work" portion of the flow.
     var progress: Double? {
         switch self {
-        case .welcome1, .welcome2, .welcome3, .welcome4: return nil
+        case .welcome1, .globe, .welcome2, .welcome3, .welcome4: return nil
         case .congrats, .paywall: return nil
         default:
             let working = Step.allCases.filter { $0.rawValue >= Step.name.rawValue && $0.rawValue <= Step.sticker.rawValue }
@@ -125,6 +125,7 @@ struct OnboardingFlow: View {
     @ViewBuilder private var screen: some View {
         switch vm.step {
         case .welcome1:         Welcome1()
+        case .globe:            GlobeScreen()
         case .welcome2:         Welcome2()
         case .welcome3:         Welcome3()
         case .welcome4:         Welcome4()
