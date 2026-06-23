@@ -465,6 +465,15 @@ private enum GlowPink {
     static let mid   = Color(hex: "EC7BA9")
 }
 
+private enum EarthColor {
+    static let oceanHi   = Color(hex: "CDEBFF")
+    static let ocean     = Color(hex: "6FB7F0")
+    static let oceanDeep = Color(hex: "2E6FB8")
+    static let land      = Color(hex: "6FC25C")
+    static let landHi    = Color(hex: "9BDB7E")
+    static let ice       = Color(hex: "EAF6FF")
+}
+
 struct GlobeScreen: View {
     @EnvironmentObject var vm: OnboardingVM
     @State private var count = 0
@@ -556,15 +565,21 @@ struct Globe3D: View {
                     .frame(width: diameter * 1.5, height: diameter * 1.5)
                     .blur(radius: 8)
 
-                // dotted planet
-                Canvas { ctx, size in drawGlobe(ctx: ctx, size: size, angle: angle) }
-                    .frame(width: diameter, height: diameter)
-                    .background(
-                        Circle()
-                            .fill(RadialGradient(colors: [.white.opacity(0.9), GlowPink.soft.opacity(0.35), .clear],
-                                                 center: UnitPoint(x: 0.36, y: 0.30), startRadius: 4, endRadius: R))
-                    )
-                    .shadow(color: GlowPink.mid.opacity(0.35), radius: 24, y: 14)
+                // planet — blue ocean ball with green continents
+                ZStack {
+                    Circle()
+                        .fill(RadialGradient(colors: [EarthColor.oceanHi, EarthColor.ocean, EarthColor.oceanDeep],
+                                             center: UnitPoint(x: 0.35, y: 0.28), startRadius: 6, endRadius: R))
+                    Canvas { ctx, size in drawGlobe(ctx: ctx, size: size, angle: angle) }
+                    Ellipse().fill(.white.opacity(0.30))
+                        .frame(width: diameter * 0.5, height: diameter * 0.3)
+                        .blur(radius: 12)
+                        .offset(x: -diameter * 0.14, y: -diameter * 0.18)
+                }
+                .frame(width: diameter, height: diameter)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
+                .shadow(color: EarthColor.oceanDeep.opacity(0.5), radius: 24, y: 14)
 
                 // orbiting avatars
                 ForEach(Array(placements.enumerated()), id: \.offset) { idx, pl in
@@ -596,28 +611,58 @@ struct Globe3D: View {
     }
 
     private func drawGlobe(ctx: GraphicsContext, size: CGSize, angle: Double) {
-        let R = min(size.width, size.height) / 2 * 0.94
+        let R = min(size.width, size.height) / 2 * 0.96
         let cx = size.width / 2, cy = size.height / 2
-        var lat = -82.0
-        while lat <= 82 {
-            // even angular spacing of dots along each latitude ring
-            let circumferenceFactor = max(0.15, cos(lat * .pi / 180))
-            let step = 10.0 / circumferenceFactor
-            var lon = 0.0
-            while lon < 360 {
-                let s = sphere(lat: lat, lonDeg: lon, angle: angle)
-                let depth = (s.z + 1) / 2                 // 0 (back) … 1 (front)
-                let sx = cx + s.x * R
-                let sy = cy - s.y * R
-                let dotR = 0.8 + depth * 1.9
-                let op = 0.10 + depth * 0.65
-                let rect = CGRect(x: sx - dotR, y: sy - dotR, width: dotR * 2, height: dotR * 2)
-                let color = depth > 0.7 ? GlowPink.mid : GlowPink.light
-                ctx.fill(Path(ellipseIn: rect), with: .color(color.opacity(op)))
+        var lat = -88.0
+        while lat <= 88 {
+            // even angular spacing along each latitude ring
+            let step = max(3.0, 4.2 / max(0.18, cos(lat * .pi / 180)))
+            var lon = -180.0
+            while lon < 180 {
+                if isLand(lat: lat, lon: lon) {
+                    let s = sphere(lat: lat, lonDeg: lon, angle: angle)
+                    if s.z > 0.02 {                       // front hemisphere only
+                        let depth = (s.z + 1) / 2
+                        let sx = cx + s.x * R
+                        let sy = cy - s.y * R
+                        let dotR = 0.9 + depth * 1.9
+                        let op = 0.45 + depth * 0.55
+                        let color = lat < -60 ? EarthColor.ice
+                                  : (depth > 0.72 ? EarthColor.landHi : EarthColor.land)
+                        ctx.fill(Path(ellipseIn: CGRect(x: sx - dotR, y: sy - dotR,
+                                                        width: dotR * 2, height: dotR * 2)),
+                                 with: .color(color.opacity(op)))
+                    }
+                }
                 lon += step
             }
-            lat += 8
+            lat += 3.0
         }
+    }
+
+    /// Low-res continent mask built from a union of lat/long ellipses — recognizable
+    /// as Earth (Americas, Greenland, Europe/Africa, Asia, India, SE Asia, Australia,
+    /// Antarctica) without needing a texture asset.
+    private func isLand(lat: Double, lon: Double) -> Bool {
+        if lat < -62 { return true }                       // Antarctica
+        func ell(_ cLon: Double, _ cLat: Double, _ hLon: Double, _ hLat: Double) -> Bool {
+            var d = lon - cLon
+            while d > 180 { d -= 360 }
+            while d < -180 { d += 360 }
+            let a = d / hLon, b = (lat - cLat) / hLat
+            return a * a + b * b <= 1
+        }
+        return ell(-100, 46, 34, 22)   // North America
+            || ell(-88, 16, 10, 11)    // Central America
+            || ell(-62, -22, 17, 30)   // South America
+            || ell(-42, 72, 13, 9)     // Greenland
+            || ell(16, 52, 21, 12)     // Europe
+            || ell(20, 2, 22, 35)      // Africa
+            || ell(48, 30, 14, 13)     // Middle East
+            || ell(96, 50, 52, 26)     // Asia
+            || ell(80, 23, 11, 13)     // India
+            || ell(118, 4, 18, 11)     // SE Asia / Indonesia
+            || ell(134, -26, 16, 11)   // Australia
     }
 
     private func project(lat: Double, lonDeg: Double, angle: Double, R: CGFloat)
