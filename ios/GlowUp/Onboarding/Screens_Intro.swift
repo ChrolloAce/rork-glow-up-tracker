@@ -467,24 +467,18 @@ private enum GlowPink {
 
 struct GlobeScreen: View {
     @EnvironmentObject var vm: OnboardingVM
-    @State private var spin = false
-    @State private var float = false
     @State private var count = 0
     private let target = 732_212
 
-    // (avatar, xOffset, yOffset, size) — placed across the globe face
-    private let pins: [(String, CGFloat, CGFloat, CGFloat)] = [
-        ("character_5",  -52, -40, 60),
-        ("character_12",  56, -28, 50),
-        ("character_23", -34,  46, 52),
-        ("character_31",  46,  48, 46),
-        ("character_44",   2, -80, 44),
-    ]
+    private let avatars = ["character_5", "character_12", "character_23",
+                           "character_31", "character_44", "character_8", "character_17"]
 
     var body: some View {
         Scaffold(showBack: false, progress: nil) {
             VStack(spacing: 26) {
-                globe.fadeUp(0.05)
+                Globe3D(avatars: avatars, diameter: 248)
+                    .frame(height: 300)
+                    .fadeUp(0.05)
                 VStack(spacing: 8) {
                     Text(count.formatted())
                         .font(.serif(48, .bold)).foregroundStyle(AppColor.ink)
@@ -498,42 +492,7 @@ struct GlobeScreen: View {
         } footer: {
             PrimaryButton(title: "Continue") { vm.next() }
         }
-        .onAppear { animate() }
-    }
-
-    private var globe: some View {
-        ZStack {
-            Circle()
-                .fill(RadialGradient(colors: [GlowPink.soft.opacity(0.6), .clear],
-                                     center: .center, startRadius: 10, endRadius: 175))
-                .frame(width: 330, height: 330).blur(radius: 6)
-
-            Circle()
-                .fill(RadialGradient(colors: [.white, GlowPink.light, GlowPink.mid],
-                                     center: UnitPoint(x: 0.36, y: 0.30), startRadius: 6, endRadius: 175))
-                .frame(width: 232, height: 232)
-                .overlay(
-                    Image(systemName: "globe")
-                        .resizable().scaledToFit()
-                        .foregroundStyle(.white.opacity(0.55))
-                        .padding(10)
-                        .rotationEffect(.degrees(spin ? 360 : 0))
-                )
-                .overlay(
-                    Ellipse().fill(.white.opacity(0.45))
-                        .frame(width: 120, height: 66).blur(radius: 14)
-                        .offset(x: -30, y: -62)
-                )
-                .clipShape(Circle())
-                .overlay(Circle().stroke(.white.opacity(0.85), lineWidth: 1))
-                .shadow(color: GlowPink.mid.opacity(0.4), radius: 26, y: 14)
-
-            ForEach(Array(pins.enumerated()), id: \.offset) { i, p in
-                AvatarPin(name: p.0, size: p.3)
-                    .offset(x: p.1, y: p.2 + (float ? -5 : 5) * (i.isMultiple(of: 2) ? 1 : -1))
-            }
-        }
-        .frame(height: 300)
+        .onAppear { animateCount() }
     }
 
     private var statBar: some View {
@@ -556,9 +515,7 @@ struct GlobeScreen: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func animate() {
-        withAnimation(.linear(duration: 22).repeatForever(autoreverses: false)) { spin = true }
-        withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) { float = true }
+    private func animateCount() {
         let steps = 45
         for i in 0...steps {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.028) {
@@ -568,15 +525,123 @@ struct GlobeScreen: View {
     }
 }
 
-struct AvatarPin: View {
+// MARK: - Real 3D spinning planet (dotted sphere + orbiting avatars)
+
+/// A genuinely 3D-projected globe: a grid of dots is mapped onto a sphere and
+/// rotated about its axis every frame (depth controls dot size + opacity, so the
+/// front face reads bright and the back recedes). Avatars are anchored at fixed
+/// lat/long and orbit with the planet — fading in as they swing to the front.
+struct Globe3D: View {
+    var avatars: [String]
+    var diameter: CGFloat = 240
+    private let speed = 0.45            // radians / second
+    private let tiltDeg = 16.0          // axial tilt for a 3D feel
+
+    private var placements: [(lat: Double, lon: Double)] {
+        let lats: [Double] = [16, -10, 30, -24, 4, -32, 22]
+        return avatars.indices.map { i in
+            (lat: lats[i % lats.count], lon: Double(i) / Double(max(1, avatars.count)) * 360.0)
+        }
+    }
+
+    var body: some View {
+        TimelineView(.animation) { tl in
+            let angle = tl.date.timeIntervalSinceReferenceDate * speed
+            let R = diameter / 2
+            ZStack {
+                // soft halo
+                Circle()
+                    .fill(RadialGradient(colors: [GlowPink.soft.opacity(0.55), .clear],
+                                         center: .center, startRadius: 8, endRadius: diameter * 0.72))
+                    .frame(width: diameter * 1.5, height: diameter * 1.5)
+                    .blur(radius: 8)
+
+                // dotted planet
+                Canvas { ctx, size in drawGlobe(ctx: ctx, size: size, angle: angle) }
+                    .frame(width: diameter, height: diameter)
+                    .background(
+                        Circle()
+                            .fill(RadialGradient(colors: [.white.opacity(0.9), GlowPink.soft.opacity(0.35), .clear],
+                                                 center: UnitPoint(x: 0.36, y: 0.30), startRadius: 4, endRadius: R))
+                    )
+                    .shadow(color: GlowPink.mid.opacity(0.35), radius: 24, y: 14)
+
+                // orbiting avatars
+                ForEach(Array(placements.enumerated()), id: \.offset) { idx, pl in
+                    let p = project(lat: pl.lat, lonDeg: pl.lon, angle: angle, R: R)
+                    GlobeAvatar(name: avatars[idx])
+                        .scaleEffect(p.scale)
+                        .opacity(p.opacity)
+                        .offset(x: p.x, y: p.y)
+                        .zIndex(p.z)
+                        .allowsHitTesting(false)
+                }
+            }
+            .frame(width: diameter, height: diameter)
+        }
+    }
+
+    /// Rotate a lat/long point about the tilted Y axis and project to the screen.
+    private func sphere(lat: Double, lonDeg: Double, angle: Double) -> (x: Double, y: Double, z: Double) {
+        let latR = lat * .pi / 180
+        let lonR = lonDeg * .pi / 180 + angle
+        let x = cos(latR) * sin(lonR)
+        let y0 = sin(latR)
+        let z0 = cos(latR) * cos(lonR)
+        // apply axial tilt around the X axis
+        let t = tiltDeg * .pi / 180
+        let y = y0 * cos(t) - z0 * sin(t)
+        let z = y0 * sin(t) + z0 * cos(t)
+        return (x, y, z)
+    }
+
+    private func drawGlobe(ctx: GraphicsContext, size: CGSize, angle: Double) {
+        let R = min(size.width, size.height) / 2 * 0.94
+        let cx = size.width / 2, cy = size.height / 2
+        var lat = -82.0
+        while lat <= 82 {
+            // even angular spacing of dots along each latitude ring
+            let circumferenceFactor = max(0.15, cos(lat * .pi / 180))
+            let step = 10.0 / circumferenceFactor
+            var lon = 0.0
+            while lon < 360 {
+                let s = sphere(lat: lat, lonDeg: lon, angle: angle)
+                let depth = (s.z + 1) / 2                 // 0 (back) … 1 (front)
+                let sx = cx + s.x * R
+                let sy = cy - s.y * R
+                let dotR = 0.8 + depth * 1.9
+                let op = 0.10 + depth * 0.65
+                let rect = CGRect(x: sx - dotR, y: sy - dotR, width: dotR * 2, height: dotR * 2)
+                let color = depth > 0.7 ? GlowPink.mid : GlowPink.light
+                ctx.fill(Path(ellipseIn: rect), with: .color(color.opacity(op)))
+                lon += step
+            }
+            lat += 8
+        }
+    }
+
+    private func project(lat: Double, lonDeg: Double, angle: Double, R: CGFloat)
+        -> (x: CGFloat, y: CGFloat, scale: CGFloat, opacity: Double, z: Double) {
+        let s = sphere(lat: lat, lonDeg: lonDeg, angle: angle)
+        let depth = (s.z + 1) / 2
+        let x = CGFloat(s.x) * R * 0.94
+        let y = -CGFloat(s.y) * R * 0.94
+        let scale = 0.62 + CGFloat(depth) * 0.5
+        // fade out as it rotates past the limb to the back
+        let opacity = s.z > -0.1 ? min(1, max(0, (s.z + 0.1) / 0.45)) : 0
+        return (x, y, scale, opacity, s.z)
+    }
+}
+
+/// Avatar bubble that sits on the planet.
+struct GlobeAvatar: View {
     var name: String
-    var size: CGFloat
     var body: some View {
         Image(name).resizable().scaledToFill()
-            .frame(width: size, height: size)
+            .frame(width: 52, height: 52)
             .clipShape(Circle())
             .overlay(Circle().stroke(.white, lineWidth: 3))
-            .shadow(color: .black.opacity(0.18), radius: 6, y: 3)
+            .shadow(color: .black.opacity(0.20), radius: 6, y: 3)
             .overlay(alignment: .bottom) {
                 Text("Glow").font(.sans(8, .bold)).foregroundStyle(GlowPink.mid)
                     .padding(.horizontal, 6).padding(.vertical, 2)
