@@ -9,6 +9,7 @@ struct ChallengeHabitDayState: Codable, Sendable {
     var doneSubtasks: [String] = []
     var journal: String = ""
     var photoAdded: Bool = false
+    var notes: String = ""
 }
 
 @Observable
@@ -213,6 +214,10 @@ class GlowViewModel {
             state.journal = text
             state.completed = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
+    }
+    /// A free-form note attached to any habit — does not affect completion.
+    func setNote(_ habit: DailyHabit, _ text: String) {
+        updateState(habit) { $0.notes = text }
     }
     func markPhotoAdded(_ habit: DailyHabit) {
         updateState(habit) { state in

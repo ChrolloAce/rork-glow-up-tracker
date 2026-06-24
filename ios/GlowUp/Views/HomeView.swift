@@ -9,6 +9,11 @@ struct HomeView: View {
 
     private var accent: Color { viewModel.selectedChallenge?.themeColor ?? Theme.pink }
 
+    /// Balanced pastel palette so each task gets its own color, evenly distributed.
+    private let habitPalette: [Color] = [
+        Theme.pink, Theme.waterBlue, Theme.sageGreen, Theme.lavender, Theme.warmGold, Theme.pinkDeep
+    ]
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -38,7 +43,7 @@ struct HomeView: View {
     // MARK: - Compact header
 
     private var compactHeader: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             HStack {
                 streakPill
                 Spacer()
@@ -47,19 +52,33 @@ struct HomeView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
 
-            VStack(spacing: 4) {
-                Text(viewModel.selectedChallenge?.name ?? "Your Challenge")
-                    .font(.system(size: 22, weight: .bold, design: .serif))
+            Text(viewModel.selectedChallenge?.name ?? "Your Challenge")
+                .font(.system(size: 20, weight: .bold, design: .serif))
+                .foregroundStyle(accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 24)
+
+            HStack(alignment: .lastTextBaseline, spacing: 6) {
+                Text("Day")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.textSecondary)
+                Text("\(viewModel.currentDay)")
+                    .font(.system(size: 40, weight: .heavy, design: .rounded))
                     .foregroundStyle(accent)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Text("Day \(viewModel.currentDay) of \(viewModel.totalDays) · \(viewModel.daysLeft) days left")
-                    .font(.system(size: 13, weight: .medium))
+                Text("of \(viewModel.totalDays)")
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Theme.textSecondary)
             }
-            .padding(.horizontal, 20)
+            .lineLimit(1)
+            .fixedSize()
+
+            Text("\(viewModel.daysLeft) days left")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Theme.textTertiary)
         }
-        .padding(.bottom, 4)
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 6)
     }
 
     private var streakPill: some View {
@@ -139,6 +158,7 @@ struct HomeView: View {
                 ChallengeHabitCard(
                     habit: habit,
                     viewModel: viewModel,
+                    accent: habitPalette[index % habitPalette.count],
                     isExpanded: expandedHabit == habit.id,
                     onExpand: {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
