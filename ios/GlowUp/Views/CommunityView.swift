@@ -28,48 +28,21 @@ struct CommunityPost: Identifiable, Hashable {
     var isLiked: Bool = false
 }
 
-struct ChatMessage: Identifiable, Hashable {
-    var id: String = UUID().uuidString
-    let username: String
-    let avatar: String
-    let age: Int
-    let message: String
-    let timestamp: String
-    let isCurrentUser: Bool
-
-    static func formatTimestamp(_ iso: String) -> String {
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let date = isoFormatter.date(from: iso)
-            ?? ISO8601DateFormatter().date(from: iso)
-            ?? Date()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date)
-    }
-}
-
 let glowAvatars: [String] = [
     "character_2", "character_5", "character_9", "character_14", "character_22"
 ]
 
 struct CommunityView: View {
     @Bindable var viewModel: GlowViewModel
-    @State private var selectedTab: CommunityTab = .community
+    @State private var filter: CommunityFilter = .sameChallenge
     @State private var showLeaderboard: Bool = false
     @State private var showNotes: Bool = false
     @State private var showComposer: Bool = false
-    @State private var chatInput: String = ""
     @State private var posts: [CommunityPost] = CommunityPost.samples
-    @State private var messages: [ChatMessage] = []
-    @State private var chatLoading: Bool = false
-    @State private var chatError: String? = nil
-    @State private var pollTask: Task<Void, Never>? = nil
-    @FocusState private var chatFocused: Bool
 
-    enum CommunityTab: String, CaseIterable, Identifiable {
-        case community = "Community"
-        case liveChat = "Live Chat"
+    enum CommunityFilter: String, CaseIterable, Identifiable {
+        case sameChallenge = "Same Challenge"
+        case everyone = "Everyone"
         var id: String { rawValue }
     }
 
@@ -84,48 +57,42 @@ struct CommunityView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
 
-                tabSwitcher
+                challengeGroupBanner
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+
+                challengeFilter
                     .padding(.horizontal, 20)
                     .padding(.top, 14)
 
-                Group {
-                    switch selectedTab {
-                    case .community:
-                        communityFeed
-                    case .liveChat:
-                        liveChat
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                communityFeed
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
-            if selectedTab == .community {
-                Button {
-                    showComposer = true
-                } label: {
+            Button {
+                showComposer = true
+            } label: {
+                HStack(spacing: 8) {
                     Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 60, height: 60)
-                        .background(
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Theme.pink, Theme.pinkDeep],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                        )
-                        .shadow(color: Theme.pink.opacity(0.45), radius: 14, x: 0, y: 8)
+                        .font(.system(size: 18, weight: .bold))
+                    Text("Post Win")
+                        .font(.system(size: 15, weight: .bold))
                 }
-                .padding(.trailing, 22)
-                .padding(.bottom, 110)
-                .sensoryFeedback(.impact(weight: .medium), trigger: showComposer)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 20)
+                .frame(height: 54)
+                .background(
+                    Capsule().fill(
+                        LinearGradient(colors: [Theme.pink, Theme.pinkDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+                )
+                .shadow(color: Theme.pink.opacity(0.45), radius: 14, x: 0, y: 8)
             }
+            .padding(.trailing, 22)
+            .padding(.bottom, 110)
+            .sensoryFeedback(.impact(weight: .medium), trigger: showComposer)
         }
         .background(Theme.screenGradient.ignoresSafeArea())
-        .sensoryFeedback(.selection, trigger: selectedTab)
         .fullScreenCover(isPresented: $showLeaderboard) {
             CommunityLeaderboardView(viewModel: viewModel)
         }
@@ -151,14 +118,6 @@ struct CommunityView: View {
             NotesSheet()
                 .presentationDetents([.medium, .large])
                 .adaptivePresentationBackground()
-        }
-        .task {
-            await loadMessages()
-            startPolling()
-        }
-        .onDisappear {
-            pollTask?.cancel()
-            pollTask = nil
         }
     }
 
@@ -219,25 +178,55 @@ struct CommunityView: View {
         }
     }
 
-    private var tabSwitcher: some View {
+    private var challengeGroupBanner: some View {
+        let name = viewModel.selectedChallenge?.name ?? "Glow"
+        return Button { showLeaderboard = true } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle().fill(.white.opacity(0.25)).frame(width: 38, height: 38)
+                    Image(systemName: "person.3.fill").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(name) Group")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text("Day \(viewModel.currentDay) · glowing together")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: "trophy.fill").font(.system(size: 11))
+                    Text("Leaderboard").font(.system(size: 12, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Capsule().fill(.white.opacity(0.22)))
+            }
+            .padding(14)
+            .background(
+                LinearGradient(colors: [Theme.pink, Theme.pinkDeep], startPoint: .topLeading, endPoint: .bottomTrailing),
+                in: .rect(cornerRadius: 20)
+            )
+            .shadow(color: Theme.pink.opacity(0.3), radius: 12, y: 6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var challengeFilter: some View {
         HStack(spacing: 6) {
-            ForEach(CommunityTab.allCases) { tab in
+            ForEach(CommunityFilter.allCases) { option in
                 Button {
-                    withAnimation(.snappy(duration: 0.3)) {
-                        selectedTab = tab
-                    }
+                    withAnimation(.snappy(duration: 0.3)) { filter = option }
                 } label: {
-                    Text(tab.rawValue)
+                    Text(option.rawValue)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(selectedTab == tab ? .white : Theme.textSecondary)
+                        .foregroundStyle(filter == option ? .white : Theme.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background {
-                            if selectedTab == tab {
-                                Capsule().fill(Theme.pink)
-                            } else {
-                                Capsule().fill(Color.clear)
-                            }
+                            if filter == option { Capsule().fill(Theme.pink) }
+                            else { Capsule().fill(Color.clear) }
                         }
                 }
             }
@@ -245,6 +234,7 @@ struct CommunityView: View {
         .padding(4)
         .background(Theme.softPink)
         .clipShape(Capsule())
+        .sensoryFeedback(.selection, trigger: filter)
     }
 
     // MARK: - Community Feed
@@ -263,218 +253,6 @@ struct CommunityView: View {
         .scrollIndicators(.hidden)
     }
 
-    // MARK: - Live Chat
-
-    private var liveChat: some View {
-        VStack(spacing: 0) {
-            if !SupabaseService.shared.isConfigured {
-                chatConfigBanner
-            } else if let chatError {
-                chatErrorBanner(chatError)
-            }
-
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 16) {
-                        if messages.isEmpty && chatLoading {
-                            HStack { Spacer(); ProgressView().tint(Theme.pink); Spacer() }
-                                .padding(.top, 60)
-                        } else if messages.isEmpty {
-                            VStack(spacing: 8) {
-                                Image(systemName: "bubble.left.and.bubble.right.fill")
-                                    .font(.system(size: 36))
-                                    .foregroundStyle(Theme.pink.opacity(0.6))
-                                Text("Be the first to say hi")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Theme.textSecondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 80)
-                        } else {
-                            ForEach(messages) { message in
-                                ChatBubble(message: message)
-                                    .id(message.id)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 18)
-                    .padding(.bottom, 16)
-                }
-                .scrollIndicators(.hidden)
-                .onChange(of: messages.count) { _, _ in
-                    if let last = messages.last {
-                        withAnimation(.spring(response: 0.4)) {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
-                }
-            }
-
-            chatInputBar
-        }
-    }
-
-    private var chatConfigBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "info.circle.fill")
-                .foregroundStyle(Theme.warmOrange)
-            Text("Live chat needs Supabase configured")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Theme.textSecondary)
-            Spacer()
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Theme.softPink)
-        .clipShape(.rect(cornerRadius: 12))
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-    }
-
-    private func chatErrorBanner(_ message: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(Theme.warmOrange)
-            Text(message)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Theme.textSecondary)
-                .lineLimit(2)
-            Spacer()
-            Button {
-                Task { await loadMessages() }
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Theme.pink)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Theme.softPink)
-        .clipShape(.rect(cornerRadius: 12))
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-    }
-
-    private var chatInputBar: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: "face.smiling")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Theme.textTertiary)
-
-                TextField("Message the community…", text: $chatInput)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Theme.textPrimary)
-                    .focused($chatFocused)
-                    .submitLabel(.send)
-                    .onSubmit { sendMessage() }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(Theme.softPink)
-            .clipShape(Capsule())
-
-            Button {
-                sendMessage()
-            } label: {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(
-                        Circle().fill(
-                            LinearGradient(
-                                colors: [Theme.pink, Theme.pinkDeep],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    )
-                    .shadow(color: Theme.pink.opacity(0.35), radius: 8, y: 4)
-            }
-            .disabled(chatInput.trimmingCharacters(in: .whitespaces).isEmpty)
-            .opacity(chatInput.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 100)
-        .background(
-            Rectangle()
-                .fill(.white.opacity(0.95))
-                .ignoresSafeArea(edges: .bottom)
-        )
-    }
-
-    private func sendMessage() {
-        let trimmed = chatInput.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        chatInput = ""
-
-        let optimistic = ChatMessage(
-            username: "You",
-            avatar: viewModel.avatarURL,
-            age: 24,
-            message: trimmed,
-            timestamp: "now",
-            isCurrentUser: true
-        )
-        messages.append(optimistic)
-
-        guard SupabaseService.shared.isConfigured else { return }
-
-        Task {
-            do {
-                _ = try await SupabaseService.shared.sendMessage(
-                    username: "You",
-                    avatar: viewModel.avatarURL,
-                    age: 24,
-                    message: trimmed
-                )
-                await loadMessages()
-            } catch {
-                chatError = "Couldn't send. Tap retry."
-            }
-        }
-    }
-
-    private func loadMessages() async {
-        guard SupabaseService.shared.isConfigured else { return }
-        if messages.isEmpty { chatLoading = true }
-        do {
-            let rows = try await SupabaseService.shared.fetchMessages(limit: 200)
-            let mapped: [ChatMessage] = rows.map { row in
-                ChatMessage(
-                    username: row.username,
-                    avatar: row.avatar,
-                    age: row.age,
-                    message: row.message,
-                    timestamp: ChatMessage.formatTimestamp(row.created_at),
-                    isCurrentUser: row.username == "You"
-                )
-            }
-            messages = mapped
-            chatError = nil
-        } catch SupabaseError.missingConfig {
-            chatError = nil
-        } catch {
-            chatError = "Couldn't load chat."
-        }
-        chatLoading = false
-    }
-
-    private func startPolling() {
-        pollTask?.cancel()
-        pollTask = Task { [weak viewModel] in
-            _ = viewModel
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(5))
-                if Task.isCancelled { break }
-                await loadMessages()
-            }
-        }
-    }
 }
 
 // MARK: - Post Card
@@ -595,68 +373,6 @@ struct LevelBadge: View {
                 )
             )
         )
-    }
-}
-
-// MARK: - Chat Bubble
-
-struct ChatBubble: View {
-    let message: ChatMessage
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            if message.isCurrentUser {
-                Spacer(minLength: 40)
-                bubbleColumn(alignment: .trailing)
-                AvatarView(url: message.avatar, size: 36)
-            } else {
-                AvatarView(url: message.avatar, size: 36)
-                bubbleColumn(alignment: .leading)
-                Spacer(minLength: 40)
-            }
-        }
-    }
-
-    private func bubbleColumn(alignment: HorizontalAlignment) -> some View {
-        VStack(alignment: alignment, spacing: 4) {
-            Text(message.username)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Theme.textSecondary)
-
-            Text(message.message)
-                .font(.system(size: 14))
-                .foregroundStyle(message.isCurrentUser ? .white : Theme.textPrimary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background {
-                    if message.isCurrentUser {
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Theme.pink, Theme.pinkDeep],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                    } else {
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(Theme.softPink)
-                    }
-                }
-
-            HStack(spacing: 6) {
-                Text("\(message.age)")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Theme.pinkDeep)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 1)
-                    .background(Theme.softPink)
-                    .clipShape(Capsule())
-                Text(message.timestamp)
-                    .font(.system(size: 10))
-                    .foregroundStyle(Theme.textTertiary)
-            }
-        }
     }
 }
 
@@ -838,17 +554,6 @@ extension CommunityPost {
             comments: 87,
             timestamp: "1d"
         )
-    ]
-}
-
-extension ChatMessage {
-    static let samples: [ChatMessage] = [
-        .init(username: "Aurora", avatar: glowAvatars[1], age: 26, message: "Morning girlies ☀️ what's everyone using for SPF today?", timestamp: "9:14 AM", isCurrentUser: false),
-        .init(username: "Mira", avatar: glowAvatars[3], age: 23, message: "Beauty of Joseon, never miss a day", timestamp: "9:16 AM", isCurrentUser: false),
-        .init(username: "You", avatar: AvatarCatalog.defaultAvatar, age: 24, message: "Same!! That one is unreal under makeup", timestamp: "9:18 AM", isCurrentUser: true),
-        .init(username: "Sienna", avatar: glowAvatars[2], age: 29, message: "Anyone tried the new Glossier serum?", timestamp: "9:22 AM", isCurrentUser: false),
-        .init(username: "Camille", avatar: glowAvatars[0], age: 25, message: "It's actually cute, makes my skin look soft 🌸", timestamp: "9:24 AM", isCurrentUser: false),
-        .init(username: "Naomi", avatar: glowAvatars[4], age: 31, message: "Adding to my list ✨", timestamp: "9:26 AM", isCurrentUser: false)
     ]
 }
 

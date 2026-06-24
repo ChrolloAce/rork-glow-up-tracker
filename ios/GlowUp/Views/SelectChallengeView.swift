@@ -14,33 +14,41 @@ struct SelectChallengeView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var tab: Int = 0
     @State private var localSelection: String? = nil
+    @State private var detailChallenge: Challenge? = nil
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(spacing: 22) {
-                    header
+        ScrollView {
+            VStack(spacing: 22) {
+                header
 
-                    LiquidSegmented(selected: $tab, options: ["Most Popular", "Custom"])
-                        .padding(.horizontal, 20)
+                LiquidSegmented(selected: $tab, options: ["Most Popular", "Custom"])
+                    .padding(.horizontal, 20)
 
-                    if tab == 0 {
-                        popularList
-                    } else {
-                        customState
-                    }
-
-                    Color.clear.frame(height: 110)
+                if tab == 0 {
+                    popularList
+                } else {
+                    customState
                 }
-                .padding(.top, 4)
-            }
-            .scrollIndicators(.hidden)
 
-            continueBar
+                Color.clear.frame(height: 28)
+            }
+            .padding(.top, 4)
         }
+        .scrollIndicators(.hidden)
         .background(Theme.screenGradient.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
+        .navigationDestination(item: $detailChallenge) { challenge in
+            ChallengeDetailView(challenge: challenge) {
+                startChallenge(challenge.id)
+            }
+        }
         .onAppear { localSelection = viewModel.selectedChallengeID }
+    }
+
+    private func startChallenge(_ id: String) {
+        viewModel.selectedChallengeID = id
+        onContinue?()
+        if !isOnboarding { dismiss() }
     }
 
     // MARK: - Header
@@ -103,9 +111,7 @@ struct SelectChallengeView: View {
                     challenge: challenge,
                     isSelected: localSelection == challenge.id
                 ) {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
-                        localSelection = challenge.id
-                    }
+                    detailChallenge = challenge
                 }
             }
         }
@@ -169,50 +175,6 @@ struct SelectChallengeView: View {
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Continue bar
-
-    private var continueBar: some View {
-        let enabled = localSelection != nil
-        return VStack(spacing: 0) {
-            Button {
-                guard let id = localSelection else { return }
-                viewModel.selectedChallengeID = id
-                if isOnboarding {
-                    onContinue?()
-                } else {
-                    onContinue?()
-                    dismiss()
-                }
-            } label: {
-                Text("Continue")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(enabled ? .white : Theme.textTertiary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background {
-                        if enabled {
-                            LinearGradient(
-                                colors: [Theme.pink, Theme.pinkDeep],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        } else {
-                            Theme.progressTrack
-                        }
-                    }
-                    .clipShape(.rect(cornerRadius: 18))
-                    .shadow(color: enabled ? Theme.pink.opacity(0.4) : .clear, radius: 14, y: 6)
-            }
-            .buttonStyle(.plain)
-            .disabled(!enabled)
-            .animation(.easeInOut(duration: 0.25), value: enabled)
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 16)
-        }
-        .background(.ultraThinMaterial)
-        .sensoryFeedback(.success, trigger: localSelection)
-    }
 }
 
 // MARK: - Challenge Card

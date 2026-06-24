@@ -6,11 +6,20 @@ struct ProfileView: View {
     @State private var connectHealth: Bool = false
     @State private var showAvatarPicker: Bool = false
     @State private var showChallengePicker: Bool = false
+    @State private var showChallengeDetail: Bool = false
+    @State private var showEditGoals: Bool = false
+    @State private var showCustomBuilder: Bool = false
+    @State private var confirmSwitch: Bool = false
+    @State private var confirmRestart: Bool = false
     @State private var calendarSync = CalendarSyncService.shared
     @State private var isImporting: Bool = false
     @State private var importToast: String? = nil
     @State private var showLogoutConfirm: Bool = false
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding: Bool = true
+    @State private var remindMorning: Bool = true
+    @State private var remindEvening: Bool = true
+    @State private var remindUnfinished: Bool = true
+    @State private var remindStreak: Bool = false
 
     private let skinTypes = ["Dry", "Oily", "Combination", "Sensitive", "Normal"]
 
@@ -21,9 +30,11 @@ struct ProfileView: View {
                     .padding(.top, 16)
 
                 VStack(spacing: 12) {
+                    currentChallengeCard
+                    challengeManagementCard
                     skinTypeCard
-                    journeyCard
                     goalsCard
+                    journeyCard
                     notificationsCard
                     connectionsCard
                     aboutCard
@@ -49,6 +60,31 @@ struct ProfileView: View {
                     onContinue: {}
                 )
             }
+        }
+        .fullScreenCover(isPresented: $showChallengeDetail) {
+            if let challenge = viewModel.selectedChallenge {
+                NavigationStack {
+                    ChallengeDetailView(challenge: challenge) { showChallengeDetail = false }
+                }
+            }
+        }
+        .sheet(isPresented: $showEditGoals) {
+            EditGoalsView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showCustomBuilder) {
+            CustomChallengeBuilderView(viewModel: viewModel)
+        }
+        .alert("Switch Challenge?", isPresented: $confirmSwitch) {
+            Button("Switch", role: .destructive) { showChallengePicker = true }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Switching may reset your current challenge progress unless it's saved. You'll pick a new challenge and start fresh.")
+        }
+        .alert("Restart Challenge?", isPresented: $confirmRestart) {
+            Button("Restart", role: .destructive) { viewModel.restartChallenge() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This sets your challenge back to Day 1 and clears today's progress. Your photos are kept.")
         }
         .confirmationDialog("Log out?", isPresented: $showLogoutConfirm, titleVisibility: .visible) {
             Button("Log Out & Restart Onboarding", role: .destructive) {
@@ -81,6 +117,136 @@ struct ProfileView: View {
         }
         .buttonStyle(.plain)
         .padding(.top, 4)
+    }
+
+    // MARK: - Current Challenge
+
+    @ViewBuilder
+    private var currentChallengeCard: some View {
+        if let challenge = viewModel.selectedChallenge {
+            let pct = viewModel.dailyCompletionFraction
+            VStack(alignment: .leading, spacing: 16) {
+                Text("CURRENT CHALLENGE")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1.5)
+                    .foregroundStyle(Theme.textTertiary)
+
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle().stroke(Theme.progressTrack, lineWidth: 7)
+                        Circle()
+                            .trim(from: 0, to: pct)
+                            .stroke(
+                                LinearGradient(colors: [Theme.pink, Theme.pinkDeep], startPoint: .top, endPoint: .bottom),
+                                style: StrokeStyle(lineWidth: 7, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+                        VStack(spacing: 0) {
+                            Text("\(Int(pct * 100))%")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(Theme.textPrimary)
+                            Text("today")
+                                .font(.system(size: 9))
+                                .foregroundStyle(Theme.textTertiary)
+                        }
+                    }
+                    .frame(width: 72, height: 72)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(challenge.name)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(Theme.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Text("Day \(viewModel.currentDay) of \(viewModel.totalDays)")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Theme.textSecondary)
+                        Text("\(viewModel.daysLeft) days left")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.textTertiary)
+                    }
+                    Spacer()
+                }
+
+                HStack(spacing: 10) {
+                    Button { showChallengeDetail = true } label: {
+                        Text("View Challenge")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(LinearGradient(colors: [Theme.pink, Theme.pinkDeep], startPoint: .leading, endPoint: .trailing), in: .rect(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button { confirmSwitch = true } label: {
+                        Text("Switch Challenge")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Theme.pinkDeep)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(Theme.softPink, in: .rect(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.pink.opacity(0.35), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(18)
+            .glassCard()
+        } else {
+            Button { showChallengePicker = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "flag.checkered")
+                        .foregroundStyle(Theme.pink)
+                    Text("Choose your challenge")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(Theme.textTertiary)
+                }
+                .padding(18)
+            }
+            .buttonStyle(.plain)
+            .glassCard()
+        }
+    }
+
+    // MARK: - Challenge management
+
+    private var challengeManagementCard: some View {
+        VStack(spacing: 0) {
+            challengeRow(icon: "doc.text.magnifyingglass", label: "View Challenge Details") { showChallengeDetail = true }
+            Divider().opacity(0.4).padding(.leading, 52)
+            challengeRow(icon: "arrow.counterclockwise", label: "Restart Challenge") { confirmRestart = true }
+            Divider().opacity(0.4).padding(.leading, 52)
+            challengeRow(icon: "arrow.left.arrow.right", label: "Switch Challenge") { confirmSwitch = true }
+            Divider().opacity(0.4).padding(.leading, 52)
+            challengeRow(icon: "slider.horizontal.3", label: "Edit Habit Goals") { showEditGoals = true }
+            Divider().opacity(0.4).padding(.leading, 52)
+            challengeRow(icon: "plus.circle", label: "Create Custom Challenge") { showCustomBuilder = true }
+        }
+        .glassCard()
+    }
+
+    private func challengeRow(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Theme.pink)
+                    .frame(width: 24)
+                Text(label)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.textTertiary)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 15)
+        }
+        .buttonStyle(.plain)
     }
 
     private var profileHeader: some View {
@@ -195,78 +361,60 @@ struct ProfileView: View {
             Text("You're currently on Day \(viewModel.currentDay) of \(viewModel.totalDays).")
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textTertiary)
-
-            Divider().opacity(0.4)
-
-            Button {
-                showChallengePicker = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "flag.checkered")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Theme.pink)
-                        .frame(width: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Current Challenge")
-                            .font(.system(size: 15))
-                            .foregroundStyle(Theme.textPrimary)
-                        Text(viewModel.selectedChallenge?.name ?? "Not selected")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Theme.textTertiary)
-                    }
-                    Spacer()
-                    Text("Switch")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Theme.pinkDeep)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Theme.textTertiary)
-                }
-            }
-            .buttonStyle(.plain)
         }
         .padding(18)
         .glassCard()
     }
 
     private var goalsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Goals")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Theme.textPrimary)
+        Button { showEditGoals = true } label: {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("Habit Goals")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Spacer()
+                    Text("Edit")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.pinkDeep)
+                }
 
-            GoalRow(icon: "scalemass.fill", color: Theme.lavender, label: "Weight Goal", value: "\(Int(viewModel.goalWeight)) lbs")
-            GoalRow(icon: "drop.fill", color: Theme.waterBlue, label: "Daily Water", value: "101 oz")
-            GoalRow(icon: "figure.walk", color: Theme.pink, label: "Step Goal", value: "10,000")
+                GoalRow(icon: "drop.fill", color: Theme.waterBlue, label: "Daily Water", value: "\(Int(viewModel.waterGoal)) oz")
+                GoalRow(icon: "figure.walk", color: Theme.pink, label: "Step Goal", value: "\(Int(viewModel.stepGoal).formatted())")
+                GoalRow(icon: "flame.fill", color: Theme.sageGreen, label: "Protein Goal", value: "\(Int(viewModel.proteinGoal)) g")
+                GoalRow(icon: "bed.double.fill", color: Theme.lavender, label: "Sleep Goal", value: "\(Int(viewModel.sleepGoal)) hrs")
+            }
+            .padding(18)
         }
-        .padding(18)
+        .buttonStyle(.plain)
         .glassCard()
     }
 
     private var notificationsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Notifications")
+            Text("Reminders")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
 
-            ForEach(HabitCategory.allCases) { category in
-                HStack(spacing: 12) {
-                    Image(systemName: category.icon)
-                        .font(.system(size: 14))
-                        .foregroundStyle(category.slabColor)
-                        .frame(width: 24)
-                    Text(category.rawValue)
-                        .font(.system(size: 15))
-                        .foregroundStyle(Theme.textPrimary)
-                    Spacer()
-                    Toggle("", isOn: .constant(category.hasReminder))
-                        .tint(Theme.pink)
-                        .labelsHidden()
-                }
-            }
+            reminderRow(icon: "sunrise.fill", color: Theme.warmGold, label: "Morning reminder", isOn: $remindMorning)
+            Divider().opacity(0.4)
+            reminderRow(icon: "moon.stars.fill", color: Theme.lavender, label: "Evening reminder", isOn: $remindEvening)
+            Divider().opacity(0.4)
+            reminderRow(icon: "checklist", color: Theme.pink, label: "Unfinished habits", isOn: $remindUnfinished)
+            Divider().opacity(0.4)
+            reminderRow(icon: "flame.fill", color: Theme.pink, label: "Streak reminder", isOn: $remindStreak)
         }
         .padding(18)
         .glassCard()
+    }
+
+    private func reminderRow(icon: String, color: Color, label: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon).font(.system(size: 14)).foregroundStyle(color).frame(width: 24)
+            Text(label).font(.system(size: 15)).foregroundStyle(Theme.textPrimary)
+            Spacer()
+            Toggle("", isOn: isOn).tint(Theme.pink).labelsHidden()
+        }
     }
 
     private var connectionsCard: some View {

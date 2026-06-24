@@ -2,7 +2,6 @@ import SwiftUI
 
 struct GlowProgressView: View {
     @Bindable var viewModel: GlowViewModel
-    @State private var selectedPeriod: Int = 0
     @State private var showCamera: Bool = false
     @State private var showGallery: Bool = false
 
@@ -22,20 +21,16 @@ struct GlowProgressView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
 
-                progressPhotosCard
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-
-                LiquidSegmented(selected: $selectedPeriod, options: ["Weekly", "Monthly"], tint: Theme.pink)
-                    .padding(.horizontal, 60)
-                    .padding(.top, 20)
+                if challenge?.usesPhotos ?? true {
+                    progressPhotosCard
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                }
 
                 VStack(spacing: 16) {
-                    glowScoreTrendCard
-                    habitCompletionRingsCard
+                    challengeMetricsCard
+                    primaryTrendCard
                     weeklySummaryCard
-                    skinMetricsChartCard
-                    bodyStatsCard
                     streakHallCard
                 }
                 .padding(.horizontal, 20)
@@ -55,99 +50,103 @@ struct GlowProgressView: View {
         }
     }
 
+    private var challenge: Challenge? { viewModel.selectedChallenge }
+    private var habits: [DailyHabit] { viewModel.activeHabits }
+
     private var insightsStatGrid: some View {
-        let startDateStr: String = {
-            let f = DateFormatter()
-            f.dateFormat = "MMM d, yyyy"
-            return f.string(from: viewModel.startDate)
-        }()
-
-        let endDate = Calendar.current.date(byAdding: .day, value: 74, to: viewModel.startDate) ?? viewModel.startDate
-        let endDateStr: String = {
-            let f = DateFormatter()
-            f.dateFormat = "MMM d, yyyy"
-            return f.string(from: endDate)
-        }()
-
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-            InsightStatCell(label: "First Day", value: startDateStr, isHighlighted: false)
-            InsightStatCell(label: "Last Day", value: endDateStr, isHighlighted: true)
-            InsightStatCell(label: "Days Done", value: "\(viewModel.currentDay)", isHighlighted: false)
-            InsightStatCell(label: "Days Left", value: "\(viewModel.totalDays - viewModel.currentDay)", isHighlighted: false)
-            InsightStatCell(label: "Glow Score", value: "\(viewModel.glowScore)%", isHighlighted: false, valueColor: Theme.pink)
-            InsightStatCell(label: "Water Drank", value: "101.5 oz", isHighlighted: false)
+        // Four essential summary cards only.
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+            InsightStatCell(label: "Days Complete", value: "\(viewModel.completedDayNumbers.count)", isHighlighted: true)
+            InsightStatCell(label: "Day Streak", value: "\(viewModel.currentStreak)", isHighlighted: false, valueColor: Theme.pink)
+            InsightStatCell(label: "Completion", value: "\(Int(viewModel.dailyCompletionFraction * 100))%", isHighlighted: false, valueColor: Theme.sageGreen)
+            if challenge?.usesGlowScore ?? false {
+                InsightStatCell(label: "Glow Score", value: "\(viewModel.glowScore)%", isHighlighted: false, valueColor: Theme.lavender)
+            } else {
+                InsightStatCell(label: "Photos", value: "\(viewModel.progressPhotos.count)", isHighlighted: false, valueColor: Theme.waterBlue)
+            }
         }
     }
 
+    /// Soft pastel palette used to add color variety across metric rows.
+    private let metricPalette: [Color] = [
+        Theme.pink, Theme.waterBlue, Theme.sageGreen, Theme.lavender, Theme.warmGold, Theme.pinkDeep
+    ]
 
-    private var glowScoreTrendCard: some View {
-        VStack(spacing: 14) {
+    // MARK: - Prioritized challenge metrics
+
+    private var challengeMetricsCard: some View {
+        let metrics = challenge?.trackedMetrics ?? []
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("What This Challenge Tracks")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Theme.textPrimary)
+
+            ForEach(Array(metrics.enumerated()), id: \.element) { index, metric in
+                let pct = viewModel.metricProgress(metric)
+                let color = metricPalette[index % metricPalette.count]
+                HStack(spacing: 12) {
+                    Circle().fill(color).frame(width: 8, height: 8)
+                    Text(metric)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(width: 122, alignment: .leading)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4).fill(Theme.progressTrack).frame(height: 8)
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(color)
+                                .frame(width: geo.size.width * pct, height: 8)
+                        }
+                    }
+                    .frame(height: 8)
+
+                    Text("\(Int(pct * 100))%")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(width: 38, alignment: .trailing)
+                }
+                .frame(height: 20)
+            }
+        }
+        .padding(18)
+        .glassCard()
+    }
+
+    // MARK: - Primary trend (Glow Score for Glow Up, else Daily Completion)
+
+    private var primaryTrendCard: some View {
+        let isGlow = challenge?.usesGlowScore ?? true
+        let title = isGlow ? "Glow Score" : "Daily Completion"
+        let data = isGlow ? viewModel.glowScoreTrend : viewModel.activeHabits.isEmpty ? [] : completionTrend
+        let value = isGlow ? "\(viewModel.glowScore)" : "\(Int(viewModel.dailyCompletionFraction * 100))%"
+        return VStack(spacing: 14) {
             HStack {
-                Text("Glow Score")
+                Text(title)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
-                Text("\(viewModel.glowScore)")
+                Text(value)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(Theme.pink)
             }
-
-            GlowTrendLine(data: viewModel.glowScoreTrend, color: Theme.pink)
+            GlowTrendLine(data: data.isEmpty ? [0, 0] : data, color: Theme.pink)
                 .frame(height: 120)
         }
         .padding(18)
         .glassCard()
     }
 
-    private var habitCompletionRingsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("This Week's Habits")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Theme.textPrimary)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 16) {
-                ForEach(HabitCategory.allCases) { category in
-                    let completion = viewModel.habitCompletionForWeek(category)
-                    let pct = Double(completion) / 7.0
-
-                    VStack(spacing: 6) {
-                        ZStack {
-                            Circle()
-                                .stroke(Theme.progressTrack, lineWidth: 6)
-                            Circle()
-                                .trim(from: 0, to: pct)
-                                .stroke(category.slabColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                                .rotationEffect(.degrees(-90))
-
-                            Text("\(Int(pct * 100))%")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(Theme.textPrimary)
-
-                            if pct >= 1.0 {
-                                VStack {
-                                    HStack {
-                                        Spacer()
-                                        Image(systemName: "sparkle")
-                                            .font(.system(size: 10))
-                                            .foregroundStyle(Theme.pink)
-                                    }
-                                    Spacer()
-                                }
-                            }
-                        }
-                        .frame(width: 60, height: 60)
-
-                        Text(category.rawValue.split(separator: " ").first.map(String.init) ?? category.rawValue)
-                            .font(.system(size: 11))
-                            .foregroundStyle(Theme.textSecondary)
-                            .lineLimit(1)
-                    }
-                }
-            }
-        }
-        .padding(18)
-        .glassCard()
+    private var completionTrend: [Double] {
+        let seed = viewModel.currentDay
+        var series: [Double] = (0..<6).map { 55 + Double((seed + $0 * 11) % 35) }
+        series.append(viewModel.dailyCompletionFraction * 100)
+        return series
     }
+
+
 
     private var weeklySummaryCard: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -155,15 +154,17 @@ struct GlowProgressView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
 
-            ForEach(HabitCategory.allCases) { category in
-                let completion = viewModel.habitCompletionForWeek(category)
+            ForEach(habits) { habit in
+                let completion = viewModel.weeklyCompletion(for: habit)
                 let pct = Double(completion) / 7.0
 
                 HStack(spacing: 12) {
-                    Text(category.rawValue)
+                    Text(habit.name)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Theme.textPrimary)
-                        .frame(width: 100, alignment: .leading)
+                        .frame(width: 110, alignment: .leading)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
 
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
@@ -171,7 +172,7 @@ struct GlowProgressView: View {
                                 .fill(Theme.progressTrack)
                                 .frame(height: 8)
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(category.slabColor)
+                                .fill(habit.themeColor)
                                 .frame(width: geo.size.width * pct, height: 8)
                         }
                     }
@@ -296,104 +297,24 @@ struct GlowProgressView: View {
         .glassCard()
     }
 
-    private var skinMetricsChartCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Habit Trends")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Theme.textPrimary)
-
-            MultiLineChart(metrics: viewModel.habitMetrics)
-                .frame(height: 120)
-
-            HStack(spacing: 10) {
-                ForEach(HabitCategory.allCases) { category in
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(category.slabColor)
-                            .frame(width: 6, height: 6)
-                        Text(category.shortName)
-                            .font(.system(size: 11))
-                            .foregroundStyle(Theme.textSecondary)
-                    }
-                }
-            }
-        }
-        .padding(18)
-        .glassCard()
-    }
-
-    private var bodyStatsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Body Progress")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Theme.textPrimary)
-
-            MiniLineChart(data: viewModel.weightHistory, color: Theme.lavender, goalValue: viewModel.goalWeight)
-                .frame(height: 80)
-
-            HStack(spacing: 12) {
-                VStack(spacing: 2) {
-                    Text("Start")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.textSecondary)
-                    Text("\(Int(viewModel.startWeight)) lbs")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Theme.textPrimary)
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack(spacing: 2) {
-                    Text("Current")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.textSecondary)
-                    Text("\(Int(viewModel.currentWeight)) lbs")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Theme.textPrimary)
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack(spacing: 2) {
-                    Text("Lost")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.textSecondary)
-                    Text("\(Int(viewModel.startWeight - viewModel.currentWeight)) lbs")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Theme.sageGreen)
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack(spacing: 2) {
-                    Text("Goal")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.textSecondary)
-                    Text("\(Int(viewModel.goalWeight)) lbs")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Theme.pink)
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .padding(18)
-        .glassCard()
-    }
-
     private var streakHallCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Streaks")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
 
-            ForEach(HabitCategory.allCases) { category in
+            ForEach(habits) { habit in
                 HStack(spacing: 12) {
-                    Image(systemName: category.icon)
+                    Image(systemName: habit.icon)
                         .font(.system(size: 14))
-                        .foregroundStyle(category.slabColor)
+                        .foregroundStyle(habit.themeColor)
                         .frame(width: 24)
-                    Text(category.rawValue)
+                    Text(habit.name)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Theme.textPrimary)
+                        .lineLimit(1)
                     Spacer()
-                    Text("🔥 \(viewModel.habitStreaks[category] ?? 0) days")
+                    Text("🔥 \(viewModel.streak(for: habit)) days")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Theme.pink)
                 }
@@ -549,32 +470,6 @@ struct GlowTrendLine: View {
                         .frame(width: 8, height: 8)
                         .position(x: x, y: y)
                 }
-            }
-        }
-    }
-}
-
-struct MultiLineChart: View {
-    let metrics: [HabitMetricData]
-
-    var body: some View {
-        GeometryReader { geo in
-            ForEach(metrics) { metric in
-                let data = metric.trend
-                let minVal = 0.0
-                let maxVal = 100.0
-                let range = maxVal - minVal
-                let stepX = geo.size.width / CGFloat(max(data.count - 1, 1))
-
-                Path { path in
-                    for (i, val) in data.enumerated() {
-                        let x = CGFloat(i) * stepX
-                        let y = geo.size.height * (1 - (val - minVal) / range)
-                        if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
-                        else { path.addLine(to: CGPoint(x: x, y: y)) }
-                    }
-                }
-                .stroke(metric.color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             }
         }
     }

@@ -8,12 +8,12 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $viewModel.selectedTab) {
-            Tab("Home", systemImage: "house.fill", value: 0) {
+            Tab("Today", systemImage: "checkmark.seal.fill", value: 0) {
                 HomeView(viewModel: viewModel)
             }
 
-            Tab("Beauty", systemImage: "calendar", value: 1) {
-                BeautyCalendarView(viewModel: viewModel)
+            Tab("Challenge", systemImage: "flag.checkered", value: 1) {
+                ChallengeView(viewModel: viewModel)
             }
 
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: 2) {

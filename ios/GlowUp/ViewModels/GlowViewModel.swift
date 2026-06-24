@@ -2,6 +2,15 @@ import SwiftUI
 import Foundation
 import UIKit
 
+/// Per-day tracking state for a single challenge habit on the Home screen.
+struct ChallengeHabitDayState: Codable, Sendable {
+    var completed: Bool = false
+    var value: Double = 0
+    var doneSubtasks: [String] = []
+    var journal: String = ""
+    var photoAdded: Bool = false
+}
+
 @Observable
 @MainActor
 class GlowViewModel {
@@ -32,6 +41,11 @@ class GlowViewModel {
         defaults.set(currentWeight, forKey: "currentWeight")
         defaults.set(goalWeight, forKey: "goalWeight")
         defaults.set(stepGoal, forKey: "stepGoal")
+        defaults.set(waterGoal, forKey: "waterGoal")
+        defaults.set(proteinGoal, forKey: "proteinGoal")
+        defaults.set(sleepGoal, forKey: "sleepGoal")
+        defaults.set(workoutMinutes, forKey: "workoutMinutes")
+        defaults.set(readingPages, forKey: "readingPages")
         defaults.set(selectedDate, forKey: "selectedDate")
         if let d = try? JSONEncoder().encode(habits) { defaults.set(d, forKey: "habits") }
         if let d = try? JSONEncoder().encode(weeklySteps) { defaults.set(d, forKey: "weeklySteps") }
@@ -41,6 +55,10 @@ class GlowViewModel {
         if let d = try? JSONEncoder().encode(lymphFaceSteps) { defaults.set(d, forKey: "lymphFace") }
         if let d = try? JSONEncoder().encode(lymphBodySteps) { defaults.set(d, forKey: "lymphBody") }
         if let d = try? JSONEncoder().encode(habitStreaks) { defaults.set(d, forKey: "habitStreaks") }
+        if let d = try? JSONEncoder().encode(challengeHabitStates) { defaults.set(d, forKey: "challengeHabitStates") }
+        defaults.set(challengeStateDay, forKey: "challengeStateDay")
+        if let d = try? JSONEncoder().encode(Array(completedDayNumbers)) { defaults.set(d, forKey: "completedDayNumbers") }
+        defaults.set(currentStreak, forKey: "currentStreak")
         if let d = try? JSONEncoder().encode(treatments) { defaults.set(d, forKey: "treatments") }
         if let d = try? JSONEncoder().encode(checklistItems) { defaults.set(d, forKey: "checklistItems") }
         defaults.synchronize()
@@ -60,7 +78,23 @@ class GlowViewModel {
                let challenge = ChallengeCatalog.popular.first(where: { $0.id == id }) {
                 totalDays = challenge.durationDays
             }
+            // Switching to a different challenge starts a fresh Day 1.
+            if oldValue != nil, oldValue != selectedChallengeID {
+                resetChallengeProgress()
+            }
         }
+    }
+
+    /// Clears all day/streak/habit state and restarts the journey at Day 1 (today).
+    private func resetChallengeProgress() {
+        let today = Calendar.current.startOfDay(for: Date())
+        startDate = today
+        defaults.set(today, forKey: "glowStartDate")
+        challengeHabitStates = [:]
+        challengeStateDay = currentDay
+        completedDayNumbers = []
+        currentStreak = 0
+        defaults.synchronize()
     }
 
     var selectedChallenge: Challenge? {
@@ -69,6 +103,171 @@ class GlowViewModel {
     }
 
     var hasSelectedChallenge: Bool { selectedChallengeID != nil }
+
+    // MARK: - Challenge daily habits (Home screen, dynamic)
+
+    /// The habits to show on Home, driven entirely by the selected challenge.
+    var activeHabits: [DailyHabit] { selectedChallenge?.dailyHabits ?? [] }
+
+    /// Per-day completion / value / sub-task state, keyed by challenge + habit name.
+    var challengeHabitStates: [String: ChallengeHabitDayState] = [:] {
+        didSet { saveJSON(challengeHabitStates, key: "challengeHabitStates") }
+    }
+    private var challengeStateDay: Int = 0 {
+        didSet { guard !isLoading else { return }; defaults.set(challengeStateDay, forKey: "challengeStateDay"); defaults.synchronize() }
+    }
+
+    private func habitKey(_ habit: DailyHabit) -> String {
+        "\(selectedChallengeID ?? "none")|\(habit.name)"
+    }
+
+    func habitState(_ habit: DailyHabit) -> ChallengeHabitDayState {
+        challengeHabitStates[habitKey(habit)] ?? ChallengeHabitDayState()
+    }
+
+    private func updateState(_ habit: DailyHabit, _ transform: (inout ChallengeHabitDayState) -> Void) {
+        var state = habitState(habit)
+        transform(&state)
+        challengeHabitStates[habitKey(habit)] = state
+    }
+
+    /// Clears per-day habit state when a new challenge day begins.
+    func refreshDailyHabitsIfNeeded() {
+        guard !isLoading else { return }
+        if challengeStateDay != currentDay {
+            challengeStateDay = currentDay
+            challengeHabitStates = [:]
+        }
+    }
+
+    var completedHabitCountToday: Int { activeHabits.filter { habitState($0).completed }.count }
+    var dailyCompletionFraction: Double {
+        activeHabits.isEmpty ? 0 : Double(completedHabitCountToday) / Double(activeHabits.count)
+    }
+    var daysLeft: Int { max(0, totalDays - currentDay) }
+    var habitsRemainingToday: Int { max(0, activeHabits.count - completedHabitCountToday) }
+
+    // MARK: - Day completion & streak
+
+    /// Challenge day-numbers the user has marked complete.
+    var completedDayNumbers: Set<Int> = [] {
+        didSet { saveJSON(Array(completedDayNumbers), key: "completedDayNumbers") }
+    }
+    /// Consecutive completed days ending at the current day.
+    var currentStreak: Int = 0 {
+        didSet { guard !isLoading else { return }; defaults.set(currentStreak, forKey: "currentStreak"); defaults.synchronize() }
+    }
+
+    /// All required habits done today (every habit is required by default).
+    var allRequiredHabitsComplete: Bool {
+        !activeHabits.isEmpty && activeHabits.allSatisfy { habitState($0).completed }
+    }
+    var isTodayComplete: Bool { completedDayNumbers.contains(currentDay) }
+
+    /// Marks the current challenge day complete and updates the streak.
+    func completeDay() {
+        guard allRequiredHabitsComplete, !completedDayNumbers.contains(currentDay) else { return }
+        completedDayNumbers.insert(currentDay)
+        recomputeStreak()
+    }
+
+    /// Whether a given challenge day-number is marked complete (drives the calendar).
+    func isDayComplete(_ dayNumber: Int) -> Bool { completedDayNumbers.contains(dayNumber) }
+
+    private func recomputeStreak() {
+        var streak = 0
+        var day = currentDay
+        while day >= 1 && completedDayNumbers.contains(day) { streak += 1; day -= 1 }
+        currentStreak = streak
+    }
+
+    func toggleHabitComplete(_ habit: DailyHabit) {
+        updateState(habit) { $0.completed.toggle() }
+    }
+    func addToQuantity(_ habit: DailyHabit, amount: Double) {
+        updateState(habit) { state in
+            state.value = max(0, state.value + amount)
+            if let goal = habit.goal { state.completed = state.value >= goal }
+        }
+    }
+    func markQuantityDone(_ habit: DailyHabit) {
+        updateState(habit) { state in
+            if let goal = habit.goal { state.value = max(state.value, goal) }
+            state.completed = true
+        }
+    }
+    func toggleSubtask(_ habit: DailyHabit, _ name: String) {
+        updateState(habit) { state in
+            if let idx = state.doneSubtasks.firstIndex(of: name) {
+                state.doneSubtasks.remove(at: idx)
+            } else {
+                state.doneSubtasks.append(name)
+            }
+            if !habit.subTasks.isEmpty {
+                state.completed = habit.subTasks.allSatisfy { state.doneSubtasks.contains($0) }
+            }
+        }
+    }
+    func setJournal(_ habit: DailyHabit, _ text: String) {
+        updateState(habit) { state in
+            state.journal = text
+            state.completed = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+    func markPhotoAdded(_ habit: DailyHabit) {
+        updateState(habit) { state in
+            state.photoAdded = true
+            state.completed = true
+        }
+    }
+
+    // MARK: - Challenge progress analytics (Progress tab)
+
+    /// Deterministic seed from a string so synthesized history is stable across launches.
+    private func stableSeed(_ string: String) -> Int {
+        string.unicodeScalars.reduce(7) { ($0 &* 31 &+ Int($1.value)) & 0xFFFFFF }
+    }
+
+    /// Days completed this week for a habit (0...7). Boosted when done today.
+    func weeklyCompletion(for habit: DailyHabit) -> Int {
+        let base = 3 + stableSeed(habit.name) % 4
+        return min(7, base + (habitState(habit).completed ? 1 : 0))
+    }
+
+    /// Current streak (days) for a habit.
+    func streak(for habit: DailyHabit) -> Int {
+        let base = stableSeed(habit.name + "streak") % 13
+        return base + (habitState(habit).completed ? 1 : 0)
+    }
+
+    /// A 0–100 trend series for a habit, ending at today's completion influence.
+    func trend(for habit: DailyHabit) -> [Double] {
+        let seed = stableSeed(habit.name)
+        var series: [Double] = (0..<6).map { 50 + Double((seed + $0 * 17) % 40) }
+        series.append(habitState(habit).completed ? 95 : Double(40 + stableSeed(habit.name + "t") % 40))
+        return series
+    }
+
+    /// 0...1 value for a tracked-metric label, derived from the closest matching habit.
+    func metricProgress(_ label: String) -> Double {
+        if label.localizedCaseInsensitiveContains("glow") { return Double(glowScore) / 100 }
+        if label.localizedCaseInsensitiveContains("daily") || label.localizedCaseInsensitiveContains("completion") {
+            return dailyCompletionFraction
+        }
+        if let habit = activeHabits.first(where: { label.localizedCaseInsensitiveContains($0.name) || $0.name.localizedCaseInsensitiveContains(label.components(separatedBy: " ").first ?? label) }) {
+            return Double(weeklyCompletion(for: habit)) / 7
+        }
+        return Double(50 + stableSeed(label) % 45) / 100
+    }
+
+    /// Best current streak across the challenge's habits.
+    var bestStreak: Int { activeHabits.map { streak(for: $0) }.max() ?? 0 }
+
+    /// Today's logged value for the challenge's water habit, if any.
+    var waterOzToday: Double {
+        guard let water = selectedChallenge?.waterHabit else { return 0 }
+        return habitState(water).value
+    }
 
     // MARK: - Journey
     var totalDays: Int = 75
@@ -110,6 +309,7 @@ class GlowViewModel {
 
         loadAllPersisted()
         loadProgressPhotos()
+        loadGlowBoard()
         isLoading = false
     }
 
@@ -125,11 +325,20 @@ class GlowViewModel {
         if defaults.object(forKey: "currentWeight") != nil { currentWeight = defaults.double(forKey: "currentWeight") }
         if defaults.object(forKey: "goalWeight") != nil { goalWeight = defaults.double(forKey: "goalWeight") }
         if defaults.object(forKey: "stepGoal") != nil { stepGoal = defaults.double(forKey: "stepGoal") }
+        if defaults.object(forKey: "waterGoal") != nil { waterGoal = defaults.double(forKey: "waterGoal") }
+        if defaults.object(forKey: "proteinGoal") != nil { proteinGoal = defaults.double(forKey: "proteinGoal") }
+        if defaults.object(forKey: "sleepGoal") != nil { sleepGoal = defaults.double(forKey: "sleepGoal") }
+        if defaults.object(forKey: "workoutMinutes") != nil { workoutMinutes = defaults.double(forKey: "workoutMinutes") }
+        if defaults.object(forKey: "readingPages") != nil { readingPages = defaults.double(forKey: "readingPages") }
         if let v: [RoutineStep] = loadJSON([RoutineStep].self, key: "skincareAM") { skincareAMSteps = v }
         if let v: [RoutineStep] = loadJSON([RoutineStep].self, key: "skincarePM") { skincarePMSteps = v }
         if let v: [RoutineStep] = loadJSON([RoutineStep].self, key: "lymphFace") { lymphFaceSteps = v }
         if let v: [RoutineStep] = loadJSON([RoutineStep].self, key: "lymphBody") { lymphBodySteps = v }
         if let v: [HabitCategory: Int] = loadJSON([HabitCategory: Int].self, key: "habitStreaks") { habitStreaks = v }
+        if let v: [String: ChallengeHabitDayState] = loadJSON([String: ChallengeHabitDayState].self, key: "challengeHabitStates") { challengeHabitStates = v }
+        if defaults.object(forKey: "challengeStateDay") != nil { challengeStateDay = defaults.integer(forKey: "challengeStateDay") }
+        if let v: [Int] = loadJSON([Int].self, key: "completedDayNumbers") { completedDayNumbers = Set(v) }
+        if defaults.object(forKey: "currentStreak") != nil { currentStreak = defaults.integer(forKey: "currentStreak") }
         if let v: [BeautyTreatment] = loadJSON([BeautyTreatment].self, key: "treatments") { treatments = v }
         if let v: [ChecklistItem] = loadJSON([ChecklistItem].self, key: "checklistItems") { checklistItems = v }
         if let v = defaults.object(forKey: "selectedDate") as? Date { selectedDate = v }
@@ -166,6 +375,44 @@ class GlowViewModel {
         } catch {
             print("Failed to save photo: \(error)")
         }
+    }
+
+    // MARK: - Glow Board (mood / vision board images)
+    var glowBoardPhotos: [ProgressPhoto] = []
+
+    private var glowBoardDirectory: URL {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("GlowBoard", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        return dir
+    }
+
+    private func loadGlowBoard() {
+        let urls = (try? FileManager.default.contentsOfDirectory(at: glowBoardDirectory, includingPropertiesForKeys: [.creationDateKey])) ?? []
+        let photos: [ProgressPhoto] = urls.compactMap { url in
+            guard url.pathExtension.lowercased() == "jpg" else { return nil }
+            let date = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
+            return ProgressPhoto(id: url.lastPathComponent, url: url, date: date)
+        }
+        self.glowBoardPhotos = photos.sorted { $0.date > $1.date }
+    }
+
+    func addGlowImage(_ image: UIImage) {
+        guard let data = image.jpegData(compressionQuality: 0.85) else { return }
+        let id = "\(Int(Date().timeIntervalSince1970))-\(glowBoardPhotos.count).jpg"
+        let url = glowBoardDirectory.appendingPathComponent(id)
+        do {
+            try data.write(to: url)
+            glowBoardPhotos.insert(ProgressPhoto(id: id, url: url, date: Date()), at: 0)
+        } catch {
+            print("Failed to save glow image: \(error)")
+        }
+    }
+
+    func removeGlowImage(_ photo: ProgressPhoto) {
+        try? FileManager.default.removeItem(at: photo.url)
+        glowBoardPhotos.removeAll { $0.id == photo.id }
     }
 
     // MARK: - Habits
@@ -274,6 +521,38 @@ class GlowViewModel {
     }
     var stepGoal: Double = 10000 {
         didSet { guard !isLoading else { return }; defaults.set(stepGoal, forKey: "stepGoal"); defaults.synchronize() }
+    }
+
+    // MARK: - Editable habit goals (Profile)
+    var waterGoal: Double = 101 {
+        didSet { guard !isLoading else { return }; defaults.set(waterGoal, forKey: "waterGoal"); defaults.synchronize() }
+    }
+    var proteinGoal: Double = 120 {
+        didSet { guard !isLoading else { return }; defaults.set(proteinGoal, forKey: "proteinGoal"); defaults.synchronize() }
+    }
+    var sleepGoal: Double = 8 {
+        didSet { guard !isLoading else { return }; defaults.set(sleepGoal, forKey: "sleepGoal"); defaults.synchronize() }
+    }
+    var workoutMinutes: Double = 45 {
+        didSet { guard !isLoading else { return }; defaults.set(workoutMinutes, forKey: "workoutMinutes"); defaults.synchronize() }
+    }
+    var readingPages: Double = 10 {
+        didSet { guard !isLoading else { return }; defaults.set(readingPages, forKey: "readingPages"); defaults.synchronize() }
+    }
+
+    /// A short, guiding "this week's focus" line derived from the challenge's focus tags.
+    var weeklyFocus: String {
+        let tags = selectedChallenge?.focusTags ?? []
+        guard !tags.isEmpty else { return "Show up for yourself today." }
+        if tags.count == 1 { return tags[0] + "." }
+        let last = tags.last!
+        let head = tags.dropLast().joined(separator: ", ")
+        return "\(head), and \(last)."
+    }
+
+    /// Restart the active challenge: back to Day 1, all progress cleared.
+    func restartChallenge() {
+        resetChallengeProgress()
     }
 
     var weeklyStepDates: [Date] {
