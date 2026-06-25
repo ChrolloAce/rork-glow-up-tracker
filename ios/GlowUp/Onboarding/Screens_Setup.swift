@@ -94,10 +94,10 @@ struct RatingScreen: View {
                 Display(lead: "Do ", emph: "you", tail: " like\nthe app?", size: 32)
                 HStack(spacing: 28) {
                     RateButton(symbol: "hand.thumbsdown.fill", on: picked == false) {
-                        picked = false; advance()
+                        picked = false
                     }
                     RateButton(symbol: "hand.thumbsup.fill", on: picked == true) {
-                        picked = true; Haptics.success(); advance()
+                        picked = true; Haptics.success()
                     }
                 }
             }
@@ -105,9 +105,6 @@ struct RatingScreen: View {
             PrimaryButton(title: "Continue") { vm.next() }
                 .opacity(picked == nil ? 0.4 : 1).disabled(picked == nil)
         }
-    }
-    private func advance() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { vm.next() }
     }
 }
 

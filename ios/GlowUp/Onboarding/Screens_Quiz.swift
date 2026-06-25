@@ -292,6 +292,7 @@ struct LoaderScreen: View {
     var tail: String
     var subtitle: String? = nil
     @State private var fill = false
+    @State private var ready = false
 
     var body: some View {
         ZStack {
@@ -307,10 +308,21 @@ struct LoaderScreen: View {
                 }
             }
             .padding(.horizontal, 40)
+
+            VStack {
+                Spacer()
+                PrimaryButton(title: "Continue") { vm.next() }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                    .opacity(ready ? 1 : 0)
+                    .animation(.easeOut(duration: 0.4), value: ready)
+                    .disabled(!ready)
+            }
         }
         .onAppear {
             withAnimation(.easeInOut(duration: 1.7)) { fill = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { vm.next() }
+            // reveal the Continue button when the bar finishes — never auto-advance
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { ready = true }
         }
     }
 }
