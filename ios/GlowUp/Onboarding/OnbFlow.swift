@@ -85,6 +85,23 @@ final class OnboardingVM: ObservableObject {
 
     func finish() { onComplete?() }
 
+    /// Testing helper — jump back to the very start and clear all selections.
+    func reset() {
+        direction = .leading
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.92)) {
+            step = .welcome1
+        }
+        name = ""
+        hearAbout = nil
+        why = []
+        idealDay = nil
+        biggest = []
+        selectedChallenge = sampleChallenges[0]
+        startToday = true
+        lengthDays = 75
+        plan = "Yearly"
+    }
+
     func next() {
         guard let i = Step.allCases.firstIndex(of: step), i + 1 < Step.allCases.count else { return }
         direction = .trailing
@@ -118,8 +135,27 @@ struct OnboardingFlow: View {
                 .transition(.push(from: vm.direction == .trailing ? .trailing : .leading)
                     .combined(with: .opacity))
         }
+        .overlay(alignment: .topTrailing) { resetButton }
         .environmentObject(vm)
         .onAppear { vm.onComplete = onComplete }
+    }
+
+    /// Floating testing control — restarts the whole onboarding flow.
+    private var resetButton: some View {
+        Button {
+            Haptics.tap()
+            vm.reset()
+        } label: {
+            Image(systemName: "arrow.counterclockwise")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(AppColor.ink.opacity(0.55), in: Circle())
+                .overlay(Circle().stroke(.white.opacity(0.5), lineWidth: 1))
+                .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
+        }
+        .padding(.trailing, 14)
+        .padding(.top, 4)
     }
 
     @ViewBuilder private var screen: some View {
