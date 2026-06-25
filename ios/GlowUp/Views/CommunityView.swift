@@ -20,6 +20,7 @@ struct CommunityPost: Identifiable, Hashable {
     let avatar: String
     let age: Int
     let level: Int
+    var streak: Int = 0
     let title: String
     let body: String
     let likes: Int
@@ -54,10 +55,6 @@ struct CommunityView: View {
                     .padding(.top, 8)
 
                 header
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-
-                challengeGroupBanner
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
 
@@ -125,42 +122,17 @@ struct CommunityView: View {
 
     private var topBar: some View {
         HStack {
+            Spacer()
             Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                    viewModel.selectedTab = 0
-                }
+                showLeaderboard = true
             } label: {
-                Image(systemName: "chevron.left")
+                Image(systemName: "trophy.fill")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.pink)
+                    .foregroundStyle(Theme.glowBlue)
                     .frame(width: 38, height: 38)
                     .adaptiveGlass(in: Circle())
             }
-
-            Spacer()
-
-            HStack(spacing: 10) {
-                Button {
-                    showLeaderboard = true
-                } label: {
-                    Image(systemName: "trophy.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Theme.warmGold)
-                        .frame(width: 38, height: 38)
-                        .adaptiveGlass(in: Circle())
-                }
-                .sensoryFeedback(.impact(weight: .light), trigger: showLeaderboard)
-
-                Button {
-                    showNotes = true
-                } label: {
-                    Image(systemName: "note.text")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Theme.pink)
-                        .frame(width: 38, height: 38)
-                        .adaptiveGlass(in: Circle())
-                }
-            }
+            .sensoryFeedback(.impact(weight: .light), trigger: showLeaderboard)
         }
     }
 
@@ -265,25 +237,18 @@ struct PostCard: View {
             HStack(spacing: 10) {
                 AvatarView(url: post.avatar, size: 40)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(post.username)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Theme.textPrimary)
-
-                        Text("\(post.age)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(Theme.pinkDeep)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 2)
-                            .background(Theme.softPink)
-                            .clipShape(Capsule())
-
-                        LevelBadge(level: post.level)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(post.username)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Theme.glowBlue)
+                        Text("\(post.streak) day streak")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Theme.textTertiary)
                     }
-                    Text("Contributor")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.textTertiary)
                 }
 
                 Spacer()
@@ -499,61 +464,26 @@ struct NotesSheet: View {
 
 extension CommunityPost {
     static let samples: [CommunityPost] = [
-        .init(
-            username: "Aurora",
-            avatar: glowAvatars[1],
-            age: 26,
-            level: 12,
-            title: "My 6-month skincare glow up ✨",
-            body: "Started with double cleansing every night and a simple vitamin C + SPF combo in the morning. The trick was sticking with it — patience really is the most underrated ingredient.",
-            likes: 248,
-            comments: 42,
-            timestamp: "2h"
-        ),
-        .init(
-            username: "Mira",
-            avatar: glowAvatars[3],
-            age: 23,
-            level: 8,
-            title: "Best drugstore retinol for sensitive skin?",
-            body: "Looking for recs that won't wreck my barrier. Currently using a basic moisturizer and SPF only — ready to level up but nervous to start.",
-            likes: 86,
-            comments: 31,
-            timestamp: "4h"
-        ),
-        .init(
-            username: "Sienna",
-            avatar: glowAvatars[2],
-            age: 29,
-            level: 15,
-            title: "Hydration changed everything",
-            body: "Tracking water for 30 days through this app and my skin has never looked better. Genuinely glowing without trying. Who else is on the water streak?",
-            likes: 174,
-            comments: 28,
-            timestamp: "8h"
-        ),
-        .init(
-            username: "Camille",
-            avatar: glowAvatars[0],
-            age: 25,
-            level: 6,
-            title: "Sunday self-care ritual 🌸",
-            body: "Long bath, clay mask, lo-fi playlist, and journaling. The most underrated part of glow culture is actually slowing down to enjoy it.",
-            likes: 312,
-            comments: 54,
-            timestamp: "1d"
-        ),
-        .init(
-            username: "Naomi",
-            avatar: glowAvatars[4],
-            age: 31,
-            level: 18,
-            title: "Lasered my pigmentation — here's what I learned",
-            body: "Three sessions in and I have honest thoughts. SPF before and after is non-negotiable. Ask me anything in the comments.",
-            likes: 421,
-            comments: 87,
-            timestamp: "1d"
-        )
+        .init(username: "Aurora", avatar: glowAvatars[1], age: 26, level: 12, streak: 42,
+              title: "Completed Day 42 of 75 Hard",
+              body: "Two workouts done, gallon of water in, diet locked. Hardest day mentally but I showed up anyway. Keep going girls.",
+              likes: 248, comments: 42, timestamp: "2h"),
+        .init(username: "Mira", avatar: glowAvatars[3], age: 23, level: 8, streak: 30,
+              title: "Hit a 30 day streak",
+              body: "30 days clean eating and no added sugar. My energy is completely different and the cravings are basically gone.",
+              likes: 186, comments: 31, timestamp: "4h"),
+        .init(username: "Sienna", avatar: glowAvatars[2], age: 29, level: 15, streak: 21,
+              title: "Skin is actually glowing",
+              body: "Three weeks into the Glow Up challenge. AM and PM skincare every day plus my water and my face has never looked better.",
+              likes: 174, comments: 28, timestamp: "8h"),
+        .init(username: "Camille", avatar: glowAvatars[0], age: 25, level: 6, streak: 12,
+              title: "All habits done today",
+              body: "Movement, water, steps, clean eating, reading. Five for five. Small wins add up. Day 12 in the books.",
+              likes: 212, comments: 24, timestamp: "1d"),
+        .init(username: "Naomi", avatar: glowAvatars[4], age: 31, level: 18, streak: 75,
+              title: "Finished 75 Hard",
+              body: "I actually did it. 75 days, zero misses. If you're on day 1 reading this, just start. Future you will thank you.",
+              likes: 521, comments: 87, timestamp: "1d")
     ]
 }
 
@@ -626,15 +556,11 @@ struct CommunityLeaderboardView: View {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.pink)
+                    .foregroundStyle(Theme.glowBlue)
                     .frame(width: 38, height: 38)
                     .adaptiveGlass(in: Circle())
             }
             Spacer()
-            HStack(spacing: 8) {
-                CurrencyPill(icon: "sparkles", value: "\(viewModel.glowScore * 28)", color: Theme.pink)
-                CurrencyPill(icon: "flame.fill", value: "\(viewModel.habitStreaks[.skincare] ?? 0)", color: Theme.warmOrange)
-            }
         }
     }
 
@@ -728,14 +654,12 @@ struct CommunityLeaderboardView: View {
                     .lineLimit(1)
 
                 HStack(spacing: 3) {
-                    Image(systemName: "sparkles")
+                    Image(systemName: "flame.fill")
                         .font(.system(size: 9, weight: .bold))
-                    Text((user?.score ?? 0).formatted(.number))
+                    Text("\(user?.streak ?? 0) days")
                         .font(.system(size: 12, weight: .semibold))
                 }
                 .foregroundStyle(color)
-
-                LevelBadge(level: user?.level ?? 0)
             }
         }
         .frame(maxWidth: .infinity)
@@ -747,10 +671,8 @@ struct CommunityLeaderboardView: View {
                 .frame(width: 38, alignment: .leading)
             Text("User")
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("Level")
-                .frame(width: 60, alignment: .center)
-            Text("Points")
-                .frame(width: 64, alignment: .trailing)
+            Text("Streak")
+                .frame(width: 70, alignment: .trailing)
         }
         .font(.system(size: 11, weight: .bold))
         .foregroundStyle(Theme.textTertiary)
@@ -784,47 +706,33 @@ struct LeaderboardRankRow: View {
             HStack(spacing: 10) {
                 AvatarView(url: user.avatar, size: 38)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(user.name)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Theme.textPrimary)
-                        if isCurrentUser {
-                            Text("YOU")
-                                .font(.system(size: 8, weight: .heavy))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(Theme.pink)
-                                .clipShape(Capsule())
-                        }
-                    }
-                    HStack(spacing: 3) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Theme.warmOrange)
-                        Text("\(user.streak) days")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Theme.textSecondary)
+                HStack(spacing: 6) {
+                    Text(user.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .lineLimit(1)
+                    if isCurrentUser {
+                        Text("YOU")
+                            .font(.system(size: 8, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Theme.pink)
+                            .clipShape(Capsule())
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Lv \(user.level)")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Theme.pinkDeep)
-                .frame(width: 60, alignment: .center)
-
-            HStack(spacing: 3) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Theme.pink)
-                Text(user.score.formatted(.number))
-                    .font(.system(size: 13, weight: .bold))
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Theme.glowBlue)
+                Text("\(user.streak)")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary)
             }
-            .frame(width: 64, alignment: .trailing)
+            .frame(width: 70, alignment: .trailing)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 14)

@@ -31,6 +31,9 @@ class GlowViewModel {
     /// (background / inactive) so nothing is lost if the user kills the app.
     func saveAll() {
         defaults.set(userName, forKey: "userName")
+        defaults.set(userQuote, forKey: "userQuote")
+        if let d = try? JSONEncoder().encode(userReasons) { defaults.set(d, forKey: "userReasons") }
+        defaults.set(hasCompletedMoodSetup, forKey: "hasCompletedMoodSetup")
         defaults.set(avatarURL, forKey: "selectedAvatarID")
         defaults.set(hasSelectedAvatar, forKey: "hasSelectedAvatar")
         defaults.set(selectedChallengeID, forKey: "selectedChallengeID")
@@ -295,11 +298,24 @@ class GlowViewModel {
         didSet { guard !isLoading else { return }; defaults.set(hasSelectedAvatar, forKey: "hasSelectedAvatar"); defaults.synchronize() }
     }
 
+    // MARK: - Mood (quote + five reasons) — global to the user, shared across challenges
+    var userQuote: String = "" {
+        didSet { guard !isLoading else { return }; defaults.set(userQuote, forKey: "userQuote"); defaults.synchronize() }
+    }
+    var userReasons: [String] = ["", "", "", "", ""] {
+        didSet { saveJSON(userReasons, key: "userReasons") }
+    }
+    /// True once the user has set up their quote/reasons (drives onboarding).
+    var hasCompletedMoodSetup: Bool {
+        didSet { guard !isLoading else { return }; defaults.set(hasCompletedMoodSetup, forKey: "hasCompletedMoodSetup"); defaults.synchronize() }
+    }
+
     init() {
         // Load persisted values BEFORE flipping isLoading to false so didSets don't write back during init.
         let stored = UserDefaults.standard.string(forKey: "selectedAvatarID")
         self.avatarURL = stored ?? AvatarCatalog.defaultAvatar
         self.hasSelectedAvatar = UserDefaults.standard.bool(forKey: "hasSelectedAvatar")
+        self.hasCompletedMoodSetup = UserDefaults.standard.bool(forKey: "hasCompletedMoodSetup")
         if let savedStart = UserDefaults.standard.object(forKey: "glowStartDate") as? Date {
             self.startDate = savedStart
         } else {
@@ -320,6 +336,8 @@ class GlowViewModel {
 
     private func loadAllPersisted() {
         if let v = defaults.string(forKey: "userName") { userName = v }
+        if let v = defaults.string(forKey: "userQuote") { userQuote = v }
+        if let v: [String] = loadJSON([String].self, key: "userReasons"), v.count == 5 { userReasons = v }
         if let v: [Habit] = loadJSON([Habit].self, key: "habits") { habits = v }
         if defaults.object(forKey: "waterOz") != nil { waterOz = defaults.double(forKey: "waterOz") }
         if defaults.object(forKey: "stepCount") != nil { stepCount = defaults.integer(forKey: "stepCount") }

@@ -32,8 +32,6 @@ struct ProfileView: View {
                 VStack(spacing: 12) {
                     currentChallengeCard
                     challengeManagementCard
-                    skinTypeCard
-                    goalsCard
                     journeyCard
                     notificationsCard
                     connectionsCard
@@ -217,13 +215,9 @@ struct ProfileView: View {
         VStack(spacing: 0) {
             challengeRow(icon: "doc.text.magnifyingglass", label: "View Challenge Details") { showChallengeDetail = true }
             Divider().opacity(0.4).padding(.leading, 52)
-            challengeRow(icon: "arrow.counterclockwise", label: "Restart Challenge") { confirmRestart = true }
-            Divider().opacity(0.4).padding(.leading, 52)
             challengeRow(icon: "arrow.left.arrow.right", label: "Switch Challenge") { confirmSwitch = true }
             Divider().opacity(0.4).padding(.leading, 52)
-            challengeRow(icon: "slider.horizontal.3", label: "Edit Habit Goals") { showEditGoals = true }
-            Divider().opacity(0.4).padding(.leading, 52)
-            challengeRow(icon: "plus.circle", label: "Create Custom Challenge") { showCustomBuilder = true }
+            challengeRow(icon: "arrow.counterclockwise", label: "Restart Challenge") { confirmRestart = true }
         }
         .glassCard()
     }
@@ -233,7 +227,7 @@ struct ProfileView: View {
             HStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundStyle(Theme.pink)
+                    .foregroundStyle(Theme.glowBlue)
                     .frame(width: 24)
                 Text(label)
                     .font(.system(size: 16))
@@ -396,13 +390,13 @@ struct ProfileView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
 
-            reminderRow(icon: "sunrise.fill", color: Theme.warmGold, label: "Morning reminder", isOn: $remindMorning)
+            reminderRow(icon: "sunrise.fill", color: Theme.glowBlue, label: "Morning reminder", isOn: $remindMorning)
             Divider().opacity(0.4)
-            reminderRow(icon: "moon.stars.fill", color: Theme.lavender, label: "Evening reminder", isOn: $remindEvening)
+            reminderRow(icon: "moon.stars.fill", color: Theme.glowBlue, label: "Evening reminder", isOn: $remindEvening)
             Divider().opacity(0.4)
-            reminderRow(icon: "checklist", color: Theme.pink, label: "Unfinished habits", isOn: $remindUnfinished)
+            reminderRow(icon: "checklist", color: Theme.glowBlue, label: "Unfinished habits", isOn: $remindUnfinished)
             Divider().opacity(0.4)
-            reminderRow(icon: "flame.fill", color: Theme.pink, label: "Streak reminder", isOn: $remindStreak)
+            reminderRow(icon: "flame.fill", color: Theme.glowBlue, label: "Streak reminder", isOn: $remindStreak)
         }
         .padding(18)
         .glassCard()
@@ -413,7 +407,7 @@ struct ProfileView: View {
             Image(systemName: icon).font(.system(size: 14)).foregroundStyle(color).frame(width: 24)
             Text(label).font(.system(size: 15)).foregroundStyle(Theme.textPrimary)
             Spacer()
-            Toggle("", isOn: isOn).tint(Theme.pink).labelsHidden()
+            Toggle("", isOn: isOn).tint(Theme.glowBlue).labelsHidden()
         }
     }
 
@@ -426,13 +420,13 @@ struct ProfileView: View {
             HStack {
                 Image(systemName: "heart.fill")
                     .font(.system(size: 14))
-                    .foregroundStyle(Theme.pink)
+                    .foregroundStyle(Theme.glowBlue)
                 Text("Apple Health")
                     .font(.system(size: 15))
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
                 Toggle("", isOn: $connectHealth)
-                    .tint(Theme.pink)
+                    .tint(Theme.glowBlue)
                     .labelsHidden()
             }
 
@@ -441,12 +435,12 @@ struct ProfileView: View {
             HStack {
                 Image(systemName: "calendar")
                     .font(.system(size: 14))
-                    .foregroundStyle(Theme.pink)
+                    .foregroundStyle(Theme.glowBlue)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Apple Calendar")
                         .font(.system(size: 15))
                         .foregroundStyle(Theme.textPrimary)
-                    Text(calendarSync.isEnabled ? "Beauty appointments syncing" : "Sync beauty appointments")
+                    Text(calendarSync.isEnabled ? "Calendar connected" : "Sync to your calendar")
                         .font(.system(size: 11))
                         .foregroundStyle(Theme.textTertiary)
                 }
@@ -467,7 +461,7 @@ struct ProfileView: View {
                         }
                     }
                 ))
-                .tint(Theme.pink)
+                .tint(Theme.glowBlue)
                 .labelsHidden()
             }
 
@@ -520,7 +514,7 @@ struct ProfileView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "person.crop.circle.badge.plus")
                         .font(.system(size: 16))
-                        .foregroundStyle(Theme.pink)
+                        .foregroundStyle(Theme.glowBlue)
                     Text("Change Avatar")
                         .font(.system(size: 16))
                         .foregroundStyle(Theme.textPrimary)
@@ -576,7 +570,7 @@ struct SettingsRow: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundStyle(Theme.pink)
+                    .foregroundStyle(Theme.glowBlue)
                 Text(label)
                     .font(.system(size: 16))
                     .foregroundStyle(Theme.textPrimary)

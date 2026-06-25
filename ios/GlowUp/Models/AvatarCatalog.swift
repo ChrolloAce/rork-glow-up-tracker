@@ -9,3 +9,5 @@ enum AvatarCatalog {
 
     static var defaultAvatar: String { "character_1" }
 }
+
+

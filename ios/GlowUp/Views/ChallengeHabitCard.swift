@@ -14,31 +14,39 @@ struct ChallengeHabitCard: View {
     @State private var checkTrigger: Int = 0
     @State private var showCamera: Bool = false
     @State private var journalDraft: String = ""
-    @State private var noteDraft: String = ""
+
+    private let blue = Theme.glowBlue
 
     private var state: ChallengeHabitDayState { viewModel.habitState(habit) }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                leftSlab
-                centerContent
+                Button(action: onExpand) {
+                    HStack(spacing: 0) {
+                        leftSlab
+                        centerContent
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
                 rightSection
             }
             .frame(minHeight: 84)
 
             if isExpanded {
+                Rectangle().fill(Theme.subtleBorder).frame(height: 1)
+                    .padding(.horizontal, 16)
                 expandedContent
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
-                    .padding(.top, 2)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .padding(.bottom, 18)
+                    .padding(.top, 16)
+                    .transition(.opacity)
             }
         }
-        .glassCard(accent: accent)
+        .flatCard()
         .onAppear {
             journalDraft = state.journal
-            noteDraft = state.notes
         }
         .sheet(isPresented: $showCamera) {
             CameraProxyView { image in
@@ -51,35 +59,29 @@ struct ChallengeHabitCard: View {
     // MARK: - Left slab
 
     private var leftSlab: some View {
-        Button(action: onExpand) {
-            ZStack {
-                UnevenRoundedRectangle(topLeadingRadius: 22, bottomLeadingRadius: 22)
-                    .fill(accent.opacity(0.9))
-                Image(systemName: habit.icon)
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            .frame(width: 72)
+        ZStack {
+            UnevenRoundedRectangle(topLeadingRadius: 22, bottomLeadingRadius: 22)
+                .fill(accent.opacity(0.9))
+            Image(systemName: habit.icon)
+                .font(.system(size: 24, weight: .medium))
+                .foregroundStyle(.white)
         }
-        .buttonStyle(.plain)
+        .frame(width: 72)
     }
 
     // MARK: - Center
 
     private var centerContent: some View {
-        Button(action: onExpand) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(habit.name)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(1)
-                subtitleText
-            }
-            .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(minHeight: 84)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(habit.name)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(Theme.textPrimary)
+                .lineLimit(1)
+            subtitleText
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 84)
     }
 
     @ViewBuilder
@@ -87,7 +89,7 @@ struct ChallengeHabitCard: View {
         switch habit.type {
         case .quantity:
             HStack(spacing: 0) {
-                Text(formatted(state.value)).foregroundStyle(accent)
+                Text(formatted(state.value)).foregroundStyle(blue)
                 Text(" / \(formatted(habit.goal ?? 0)) \(habit.unit ?? "")").foregroundStyle(Theme.textSecondary)
             }
             .font(.system(size: 13, weight: .medium))
@@ -107,16 +109,11 @@ struct ChallengeHabitCard: View {
         }
     }
 
-    // MARK: - Right (status + check, plus a chevron for symmetry)
+    // MARK: - Right (check button only)
 
     private var rightSection: some View {
-        HStack(spacing: 10) {
-            checkButton
-            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Theme.textTertiary)
-        }
-        .padding(.trailing, 16)
+        checkButton
+            .padding(.trailing, 16)
     }
 
     private var checkButton: some View {
@@ -164,27 +161,34 @@ struct ChallengeHabitCard: View {
         }
     }
 
-    // MARK: - Expanded dropdown (description + one focused feature)
+    // MARK: - Expanded dropdown (instruction + tip + optional control)
+
+    private var hasFeature: Bool { habit.type != .checkmark }
+    private var isWater: Bool { habit.type == .quantity && habit.unit == "oz" }
 
     private var expandedContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            descriptionRow
-            Rectangle().fill(Theme.subtleBorder).frame(height: 1)
-            featureBody
+        VStack(alignment: .leading, spacing: 16) {
+            if !isWater { adviceCard }      // water shows just the bottles + label
+            if hasFeature { featureBody }
         }
     }
 
-    private var descriptionRow: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle.fill")
+    /// A clean, breathable advice box with real coaching for this habit.
+    private var adviceCard: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(blue)
+                .padding(.top, 1)
+            Text(habit.tip.isEmpty ? habit.explanation : habit.tip)
                 .font(.system(size: 14))
-                .foregroundStyle(accent.opacity(0.8))
-            Text(habit.explanation)
-                .font(.system(size: 13))
                 .foregroundStyle(Theme.textSecondary)
+                .lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 16).fill(blue.opacity(0.07)))
     }
 
     @ViewBuilder
@@ -194,18 +198,27 @@ struct ChallengeHabitCard: View {
         case .routine: routineFeature
         case .photo: photoFeature
         case .journal: journalFeature
-        case .checkmark: noteFeature
+        case .checkmark: EmptyView()
         }
     }
 
+    @ViewBuilder
     private var quantityFeature: some View {
+        if habit.unit == "oz" {
+            waterFeature
+        } else {
+            standardQuantity
+        }
+    }
+
+    private var standardQuantity: some View {
         let goal = habit.goal ?? 0
-        return VStack(spacing: 14) {
+        return VStack(spacing: 16) {
             HStack {
                 stepButton("minus") { viewModel.addToQuantity(habit, amount: -quantityStep) }
                 Spacer()
                 VStack(spacing: 2) {
-                    Text(formatted(state.value)).font(.system(size: 30, weight: .bold)).foregroundStyle(Theme.textPrimary)
+                    Text(formatted(state.value)).font(.system(size: 32, weight: .bold)).foregroundStyle(Theme.textPrimary)
                     Text("of \(formatted(goal)) \(habit.unit ?? "")").font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
@@ -215,13 +228,54 @@ struct ChallengeHabitCard: View {
         }
     }
 
+    /// Cute water tracker — a row of little bottles (1 ≈ 8 oz) you tap to fill.
+    private var waterFeature: some View {
+        let goal = habit.goal ?? 0
+        let cupOz = 8.0
+        let totalCups = max(1, Int((goal / cupOz).rounded(.up)))
+        let filledCups = min(totalCups, Int(state.value / cupOz))
+        let cupsLeft = max(0, totalCups - filledCups)
+        let columns = [GridItem(.adaptive(minimum: 34), spacing: 6)]
+        return VStack(spacing: 16) {
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(0..<totalCups, id: \.self) { i in
+                    Button {
+                        let target = Double(i + 1) * cupOz
+                        checkTrigger += 1
+                        viewModel.addToQuantity(habit, amount: target - state.value)
+                    } label: {
+                        Image(systemName: i < filledCups ? "waterbottle.fill" : "waterbottle")
+                            .font(.system(size: 22))
+                            .foregroundStyle(i < filledCups ? blue : Theme.textTertiary.opacity(0.4))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .sensoryFeedback(.impact(weight: .light), trigger: checkTrigger)
+
+            VStack(spacing: 3) {
+                Text(cupsLeft == 0 ? "All bottles done 🎉" : "\(cupsLeft) bottle\(cupsLeft == 1 ? "" : "s") to go")
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.textPrimary)
+                Text("\(Int(state.value)) of \(Int(goal)) oz · 1 bottle ≈ 8 oz")
+                    .font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
+            }
+
+            HStack(spacing: 12) {
+                stepButton("minus") { viewModel.addToQuantity(habit, amount: -cupOz) }
+                pillButton("Mark as done") { viewModel.markQuantityDone(habit) }
+                stepButton("plus") { viewModel.addToQuantity(habit, amount: cupOz) }
+            }
+        }
+    }
+
     private func stepButton(_ system: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: system)
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(accent)
                 .frame(width: 46, height: 46)
-                .background(Circle().fill(accent.opacity(0.14)))
+                .background(Circle().fill(blue.opacity(0.13)))
         }
         .buttonStyle(.plain)
     }
@@ -275,20 +329,6 @@ struct ChallengeHabitCard: View {
         }
     }
 
-    private var noteFeature: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: state.completed ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 16)).foregroundStyle(state.completed ? accent : Theme.textTertiary)
-                Text(state.completed ? "Done for today" : "Tap the check to complete")
-                    .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.textSecondary)
-                Spacer()
-            }
-            textArea(placeholder: "Add a note (optional)…", text: $noteDraft)
-            pillButton("Save note") { viewModel.setNote(habit, noteDraft) }
-        }
-    }
-
     // MARK: - Reusable bits
 
     private func textArea(placeholder: String, text: Binding<String>) -> some View {
@@ -307,10 +347,10 @@ struct ChallengeHabitCard: View {
                 Text(title)
             }
             .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(Theme.pinkDeep)
+            .foregroundStyle(Theme.textPrimary)
             .frame(maxWidth: .infinity)
             .frame(height: 44)
-            .background(Capsule().fill(accent.opacity(0.14)))
+            .background(Capsule().fill(blue.opacity(0.13)))
         }
         .buttonStyle(.plain)
     }

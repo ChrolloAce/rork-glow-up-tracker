@@ -84,6 +84,8 @@ struct DailyHabit: Codable, Sendable, Hashable, Identifiable {
     var unit: String? = nil
     /// Routine habits: the sub-steps shown as check circles when expanded.
     var subTasks: [String] = []
+    /// Real, specific coaching advice shown in the Today dropdown.
+    var tip: String = ""
 
     /// Slab / accent color, driven by the task type for a soft, varied palette.
     var themeColor: Color { type.tint }
@@ -151,15 +153,15 @@ enum ChallengeCatalog {
             imageLayout: .hero,
             themeRGB: [0.86, 0.60, 0.68], // dusty rose
             dailyHabits: [
-                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Sip your way to today's hydration goal.", type: .quantity, goal: 80, unit: "oz"),
-                DailyHabit(icon: "figure.walk", name: "Movement", explanation: "30 minutes of any movement you enjoy.", type: .checkmark),
-                DailyHabit(icon: "shoeprints.fill", name: "Steps Goal", explanation: "Reach your daily step target.", type: .quantity, goal: 8000, unit: "steps"),
-                DailyHabit(icon: "leaf.fill", name: "Clean Eating", explanation: "Stick to your clean meals for the day.", type: .checkmark),
-                DailyHabit(icon: "book.fill", name: "Reading", explanation: "Read 10 pages of something uplifting.", type: .checkmark)
+                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Sip your way to today's hydration goal.", type: .quantity, goal: 80, unit: "oz", tip: "Get to 80 oz today. Start with a full glass the second you wake up and keep a bottle on you so sipping is automatic. Don't wait until you feel thirsty."),
+                DailyHabit(icon: "figure.walk", name: "Movement", explanation: "30 minutes of any movement you enjoy.", type: .checkmark, tip: "Move for 30 minutes. A walk, pilates, dancing, whatever you'll actually do. It doesn't have to be hard, it just has to happen. Done beats perfect."),
+                DailyHabit(icon: "shoeprints.fill", name: "Steps Goal", explanation: "Reach your daily step target.", type: .quantity, goal: 8000, unit: "steps", tip: "Hit 8,000 steps. Take the stairs, park far, walk 10 minutes after meals. The little walks add up faster than you think."),
+                DailyHabit(icon: "leaf.fill", name: "Clean Eating", explanation: "Stick to your clean meals for the day.", type: .checkmark, tip: "Eat real food today. Protein, veggies, good carbs. Skip the processed stuff and added sugar. If the ingredient list is long, leave it on the shelf."),
+                DailyHabit(icon: "book.fill", name: "Reading", explanation: "Read 10 pages of something uplifting.", type: .checkmark, tip: "Read 10 pages of something that makes you smarter instead of scrolling for three hours straight. Go pick up the book right now.")
             ],
             rules: [
                 "Complete each daily habit to keep your streak alive.",
-                "Movement can be a walk, yoga, pilates — your choice.",
+                "Movement can be a walk, yoga, or pilates. Your choice.",
                 "Miss a day? You keep your progress and pick back up.",
                 "Built to be sustainable, never punishing."
             ],
@@ -178,16 +180,16 @@ enum ChallengeCatalog {
             imageLayout: .collage,
             themeRGB: [0.70, 0.62, 0.88], // lavender
             dailyHabits: [
-                DailyHabit(icon: "dumbbell.fill", name: "Workout", explanation: "One focused 45-minute session.", type: .checkmark),
-                DailyHabit(icon: "figure.walk", name: "Steps Goal", explanation: "Reach your daily step goal.", type: .quantity, goal: 10000, unit: "steps"),
-                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Hit your hydration target.", type: .quantity, goal: 100, unit: "oz"),
-                DailyHabit(icon: "nosign", name: "No Sugar", explanation: "Skip added sugar for the day.", type: .checkmark),
-                DailyHabit(icon: "book.fill", name: "Reading", explanation: "Read 10 pages.", type: .checkmark),
-                DailyHabit(icon: "camera.fill", name: "Progress Photo", explanation: "Capture a daily progress photo.", type: .photo)
+                DailyHabit(icon: "dumbbell.fill", name: "Workout", explanation: "One focused 45-minute session.", type: .checkmark, tip: "Get a real 45 minute workout in. Strength or a hard sweat session, full effort. Show up like it matters."),
+                DailyHabit(icon: "figure.walk", name: "Steps Goal", explanation: "Reach your daily step goal.", type: .quantity, goal: 10000, unit: "steps", tip: "Hit 10,000 steps. A morning walk, a lunch lap, an evening loop. Walking after meals helps your digestion and energy too."),
+                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Hit your hydration target.", type: .quantity, goal: 100, unit: "oz", tip: "Drink 100 oz today. Front load it early so you're not chugging before bed. Add lemon or cucumber if plain water bores you."),
+                DailyHabit(icon: "nosign", name: "No Added Sugar", explanation: "Skip added sugar for the day.", type: .checkmark, tip: "No added sugar today. Watch the sneaky stuff in sauces, drinks, and healthy looking bars. Want something sweet? Reach for fruit."),
+                DailyHabit(icon: "book.fill", name: "Reading", explanation: "Read 10 pages.", type: .checkmark, tip: "Read 10 pages of something that builds you, not a feed. Start the chapter now while it's on your mind."),
+                DailyHabit(icon: "camera.fill", name: "Progress Photo", explanation: "Capture a daily progress photo.", type: .photo, tip: "Snap your photo. Same spot, same light, same time. You won't see daily change but in 30 days it'll be obvious.")
             ],
             rules: [
                 "All habits should be completed each day.",
-                "One real workout daily — indoor or outdoor.",
+                "One real workout daily, indoor or outdoor.",
                 "No added sugar throughout the day.",
                 "A slip won't reset you, but aim for consistency."
             ],
@@ -201,21 +203,21 @@ enum ChallengeCatalog {
             description: "A strict transformation challenge built around workouts, water, diet, reading, and daily progress photos.",
             joinedCount: 15600,
             focusTags: ["Discipline", "Fitness", "Mental Toughness"],
-            habitPreview: ["Workout 1", "Workout 2", "Water", "Diet", "Reading", "Progress Photo"],
+            habitPreview: ["Strength", "Cardio", "Water", "Diet", "Reading", "Photo"],
             imageSlots: [ImageSlot(caption: "Transformation")],
             imageLayout: .hero,
             themeRGB: [0.86, 0.38, 0.50], // pink deep
             dailyHabits: [
-                DailyHabit(icon: "dumbbell.fill", name: "Workout 1", explanation: "First 45-minute workout of the day.", type: .checkmark),
-                DailyHabit(icon: "figure.run", name: "Workout 2", explanation: "Second workout — one must be outdoors.", type: .checkmark),
-                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Drink a full gallon of water.", type: .quantity, goal: 128, unit: "oz"),
-                DailyHabit(icon: "fork.knife", name: "Strict Diet", explanation: "Follow your diet exactly today.", type: .checkmark),
-                DailyHabit(icon: "nosign", name: "No Cheat Meals", explanation: "Zero cheat meals — no exceptions.", type: .checkmark),
-                DailyHabit(icon: "book.fill", name: "Reading", explanation: "Read 10 pages of non-fiction.", type: .checkmark),
-                DailyHabit(icon: "camera.fill", name: "Progress Photo", explanation: "Take a daily progress photo.", type: .photo)
+                DailyHabit(icon: "dumbbell.fill", name: "Strength Training", explanation: "45 minutes of lifting.", type: .checkmark, tip: "Lift heavy today. Challenging weight for 8 to 15 reps, clean form over ego, a full 45 minutes. Muscle is what reshapes your body."),
+                DailyHabit(icon: "figure.run", name: "Cardio", explanation: "Get your heart rate up.", type: .checkmark, tip: "Get your heart rate up. A 40 minute run, or HIIT with short explosive intervals to burn fat. Take it outside if you can."),
+                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Drink a full gallon of water.", type: .quantity, goal: 128, unit: "oz", tip: "Drink the full gallon, 128 oz. Carry one big bottle and pace it all day. Hydration drives your energy, recovery, and appetite."),
+                DailyHabit(icon: "fork.knife", name: "Strict Diet", explanation: "Follow your diet exactly today.", type: .checkmark, tip: "Stay locked in. Whole foods, high protein, nothing ultra processed. Don't grab the fried chicken because you're busy. Hit your targets."),
+                DailyHabit(icon: "nosign", name: "No Cheat Meals", explanation: "Zero cheat meals.", type: .checkmark, tip: "Zero cheat meals, zero exceptions. One bite off plan resets today. The point is proving you can hold the line. It's only 75 days."),
+                DailyHabit(icon: "book.fill", name: "Reading", explanation: "Read 10 pages of non-fiction.", type: .checkmark, tip: "Read 10 pages of something that makes you smarter. Business, mindset, a real skill. Instead of scrolling for three hours, open the book right now."),
+                DailyHabit(icon: "camera.fill", name: "Progress Photo", explanation: "Take a daily progress photo.", type: .photo, tip: "Take your daily photo. Same spot, same light. This is your proof the work is paying off when the mirror lies to you.")
             ],
             rules: [
-                "Every task must be completed each day — no exceptions.",
+                "Every task must be completed each day, no exceptions.",
                 "Two workouts daily, one of them outdoors.",
                 "No alcohol and no cheat meals.",
                 "Miss anything and the challenge restarts at day 1."
@@ -235,13 +237,13 @@ enum ChallengeCatalog {
             imageLayout: .collage,
             themeRGB: [0.96, 0.56, 0.66], // pink
             dailyHabits: [
-                DailyHabit(icon: "sun.max.fill", name: "AM Skincare Routine", explanation: "Your morning glow routine.", type: .routine, subTasks: ["Cleanser", "Vitamin C Serum", "Moisturizer", "SPF"]),
-                DailyHabit(icon: "moon.stars.fill", name: "PM Skincare Routine", explanation: "Evening cleanse and treat.", type: .routine, subTasks: ["Double Cleanse", "Treatment", "Eye Cream", "Night Cream"]),
-                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Hydrate for radiant skin.", type: .quantity, goal: 100, unit: "oz"),
-                DailyHabit(icon: "hands.sparkles.fill", name: "Lymphatic Drainage", explanation: "Face + body routine.", type: .routine, subTasks: ["Dry brushing", "Gua sha", "Face massage", "Movement"]),
-                DailyHabit(icon: "leaf.fill", name: "Clean Eating for Skin", explanation: "Nourish with skin-loving foods.", type: .checkmark),
-                DailyHabit(icon: "bed.double.fill", name: "Sleep Goal", explanation: "Aim for 7+ hours of rest.", type: .quantity, goal: 7, unit: "hrs"),
-                DailyHabit(icon: "camera.fill", name: "Glow Check-In", explanation: "Capture today's glow.", type: .photo)
+                DailyHabit(icon: "sun.max.fill", name: "AM Skincare Routine", explanation: "Your morning glow routine.", type: .routine, subTasks: ["Cleanser", "Vitamin C Serum", "Moisturizer", "SPF"], tip: "Cleanse, vitamin C, moisturize, and never skip SPF. Sun is the number one cause of aging. Be gentle, your skin barrier matters."),
+                DailyHabit(icon: "moon.stars.fill", name: "PM Skincare Routine", explanation: "Evening cleanse and treat.", type: .routine, subTasks: ["Double Cleanse", "Treatment", "Eye Cream", "Night Cream"], tip: "Double cleanse if you wore SPF or makeup, then layer your treatment and a rich night cream. Night is when your skin actually repairs."),
+                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Hydrate for radiant skin.", type: .quantity, goal: 100, unit: "oz", tip: "Drink 100 oz. Hydrated skin is plump, glowing skin. Dehydration shows up on your face first. Keep a bottle on you and sip all day."),
+                DailyHabit(icon: "hands.sparkles.fill", name: "Lymphatic Drainage", explanation: "Face + body routine.", type: .routine, subTasks: ["Dry brushing", "Gua sha", "Face massage", "Movement"], tip: "Dry brush toward your heart, gua sha upward, add light massage. It reduces puffiness, sculpts, and gets your circulation moving. Five minutes is plenty."),
+                DailyHabit(icon: "leaf.fill", name: "Clean Eating for Skin", explanation: "Nourish with skin-loving foods.", type: .checkmark, tip: "Eat for your skin. Healthy fats, colorful veggies, water rich foods. Cut sugar and dairy if you're breaking out. Your face reflects your plate."),
+                DailyHabit(icon: "bed.double.fill", name: "Sleep Goal", explanation: "Aim for 7+ hours of rest.", type: .quantity, goal: 7, unit: "hrs", tip: "Get 7 plus hours. This is your real beauty sleep, when skin regenerates and cortisol resets. Get off screens an hour before bed."),
+                DailyHabit(icon: "camera.fill", name: "Glow Check-In", explanation: "Capture today's glow.", type: .photo, tip: "Snap a glow check in in natural light. Tracking your skin over time shows what's actually working, way more honest than the mirror.")
             ],
             rules: [
                 "Focus on consistency over perfection.",
@@ -264,19 +266,19 @@ enum ChallengeCatalog {
             imageLayout: .illustration,
             themeRGB: [0.557, 0.769, 0.627], // sage green
             dailyHabits: [
-                DailyHabit(icon: "carrot.fill", name: "Whole Foods Meals", explanation: "Build meals around whole foods.", type: .checkmark),
-                DailyHabit(icon: "nosign", name: "No Added Sugar", explanation: "Avoid added and refined sugar.", type: .checkmark),
-                DailyHabit(icon: "flame.fill", name: "Protein Goal", explanation: "Hit your daily protein goal.", type: .quantity, goal: 120, unit: "g"),
-                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Reach your hydration target.", type: .quantity, goal: 100, unit: "oz"),
-                DailyHabit(icon: "leaf.fill", name: "Fruit & Veggie Goal", explanation: "Eat 5 servings today.", type: .quantity, goal: 5, unit: "servings"),
-                DailyHabit(icon: "text.book.closed.fill", name: "Craving Check-In", explanation: "Note and reflect on cravings.", type: .journal),
-                DailyHabit(icon: "list.bullet.clipboard.fill", name: "Meal Prep / Plan", explanation: "Plan tomorrow's meals.", type: .checkmark)
+                DailyHabit(icon: "carrot.fill", name: "Whole Foods Meals", explanation: "Build meals around whole foods.", type: .checkmark, tip: "Build every meal around whole foods. A protein, veggies, a smart carb. If it comes in a wrapper with a long ingredient list, leave it."),
+                DailyHabit(icon: "nosign", name: "No Added Sugar", explanation: "Avoid added and refined sugar.", type: .checkmark, tip: "Cut added sugar today. It hides in sauces, yogurt, and snacks that look healthy, so read labels. Craving hits? Fruit and a glass of water first."),
+                DailyHabit(icon: "flame.fill", name: "Protein Goal", explanation: "Hit your daily protein goal.", type: .quantity, goal: 120, unit: "g", tip: "Hit your protein. It keeps you full, steadies blood sugar, and protects muscle. Lead every meal with a protein source."),
+                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Reach your hydration target.", type: .quantity, goal: 100, unit: "oz", tip: "Drink 100 oz. Half the time hunger is really thirst. Have water first, wait 10 minutes, then decide if you're actually hungry."),
+                DailyHabit(icon: "leaf.fill", name: "Fruit & Veggie Goal", explanation: "Eat 5 servings today.", type: .quantity, goal: 5, unit: "servings", tip: "Get 5 servings of fruits and veggies. Aim for color and variety, half your plate each meal. Fiber keeps you full and your gut happy."),
+                DailyHabit(icon: "text.book.closed.fill", name: "Craving Check-In", explanation: "Note and reflect on cravings.", type: .journal, tip: "Write down your cravings. What you wanted, when, and what set it off. Naming the trigger is how you finally beat it."),
+                DailyHabit(icon: "list.bullet.clipboard.fill", name: "Meal Prep / Plan", explanation: "Plan tomorrow's meals.", type: .checkmark, tip: "Prep tomorrow's meals tonight. Ten minutes now kills the what do I even eat panic that sends you straight to takeout.")
             ],
             rules: [
                 "Center every meal on whole foods.",
                 "No added sugar or ultra-processed snacks.",
                 "Meet cravings with a mindful check-in.",
-                "Progress over perfection — one clean choice at a time."
+                "Progress over perfection, one clean choice at a time."
             ],
             trackedMetrics: ["Sugar-free streak", "Whole food consistency", "Protein goal", "Craving check-ins", "Water intake"]
         ),
@@ -293,15 +295,15 @@ enum ChallengeCatalog {
             imageLayout: .gradient,
             themeRGB: [0.96, 0.62, 0.38], // warm orange
             dailyHabits: [
-                DailyHabit(icon: "nosign", name: "No Added Sugar", explanation: "Cut all added sugar today.", type: .checkmark),
-                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Stay hydrated to curb cravings.", type: .quantity, goal: 100, unit: "oz"),
-                DailyHabit(icon: "leaf.fill", name: "Whole Foods", explanation: "Choose whole, unprocessed foods.", type: .checkmark),
-                DailyHabit(icon: "square.and.pencil", name: "Craving Log", explanation: "Log cravings as they appear.", type: .journal),
-                DailyHabit(icon: "flame.fill", name: "Protein Goal", explanation: "Get enough protein to stay full.", type: .quantity, goal: 120, unit: "g")
+                DailyHabit(icon: "nosign", name: "No Added Sugar", explanation: "Cut all added sugar today.", type: .checkmark, tip: "Zero added sugar today. The first few days are the hardest while your body adjusts. Push through and the cravings fade. Read your labels."),
+                DailyHabit(icon: "drop.fill", name: "Water Intake", explanation: "Stay hydrated to curb cravings.", type: .quantity, goal: 100, unit: "oz", tip: "Drink 100 oz. Water is your weapon against cravings. Want something sweet? Down a glass first. Usually it was just thirst."),
+                DailyHabit(icon: "leaf.fill", name: "Whole Foods", explanation: "Choose whole, unprocessed foods.", type: .checkmark, tip: "Stick to whole, unprocessed foods. They keep your blood sugar steady, which means fewer crashes and way fewer cravings later."),
+                DailyHabit(icon: "square.and.pencil", name: "Craving Log", explanation: "Log cravings as they appear.", type: .journal, tip: "Log every craving the second it hits. Writing it down creates a pause, and most cravings pass in a few minutes if you wait them out."),
+                DailyHabit(icon: "flame.fill", name: "Protein Goal", explanation: "Get enough protein to stay full.", type: .quantity, goal: 120, unit: "g", tip: "Hit your protein. It's the most filling macro and it flattens the blood sugar spikes that push you toward sugar. Anchor every meal with it.")
             ],
             rules: [
                 "No added or refined sugar for the day.",
-                "Read labels — hidden sugars count.",
+                "Read labels. Hidden sugars count.",
                 "Reach for water or protein when cravings hit.",
                 "One day at a time builds the streak."
             ],

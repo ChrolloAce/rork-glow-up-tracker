@@ -11,11 +11,16 @@ enum Theme {
     static let textSecondary = Color(red: 0.45, green: 0.38, blue: 0.40)
     static let textTertiary = Color(red: 0.65, green: 0.58, blue: 0.60)
 
-    // Pink family (primary accent)
-    static let pink = Color(red: 0.96, green: 0.56, blue: 0.66)
-    static let pinkLight = Color(red: 0.99, green: 0.78, blue: 0.82)
-    static let pinkDeep = Color(red: 0.86, green: 0.38, blue: 0.50)
-    static let blushPink = Color(red: 0.99, green: 0.84, blue: 0.86)
+    // Primary accent — now ink black (was pink). Names kept so the whole app
+    // recolors at once. Light-blue (glowBlue) is the secondary accent / shadow tint.
+    static let pink = Color(red: 0.13, green: 0.13, blue: 0.14)        // ink
+    static let pinkLight = Color(red: 0.86, green: 0.87, blue: 0.90)   // light gray
+    static let pinkDeep = Color(red: 0.04, green: 0.04, blue: 0.05)    // near-black
+    static let blushPink = Color(red: 0.90, green: 0.91, blue: 0.94)   // pale gray
+
+    /// Soft pink — secondary accent used for soft shadows and small highlights throughout.
+    static let glowBlue = Color(red: 0.96, green: 0.56, blue: 0.66)
+    static let ink = Color(red: 0.13, green: 0.13, blue: 0.14)
 
     // Rose gold (kept for identity)
     static let roseGold = Color(red: 0.88, green: 0.58, blue: 0.52)
@@ -35,10 +40,10 @@ enum Theme {
 
     // Utility
     static let muted = textSecondary
-    static let subtleBorder = Color(red: 0.95, green: 0.86, blue: 0.88)
+    static let subtleBorder = Color(red: 0.90, green: 0.90, blue: 0.92)
     static let glassBackground = Color.white.opacity(0.6)
-    static let glassStroke = pink.opacity(0.25)
-    static let progressTrack = Color(red: 0.96, green: 0.90, blue: 0.92)
+    static let glassStroke = pink.opacity(0.18)
+    static let progressTrack = Color(red: 0.92, green: 0.92, blue: 0.94)
 
     // Clean white screen background
     static let screenGradient = LinearGradient(
@@ -91,14 +96,14 @@ struct GlassCard: ViewModifier {
                 RoundedRectangle(cornerRadius: radius)
                     .stroke(
                         LinearGradient(
-                            colors: [strokeColor.opacity(0.55), strokeColor.opacity(0.18)],
+                            colors: [strokeColor.opacity(0.22), strokeColor.opacity(0.08)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 1.1
+                        lineWidth: 1
                     )
             )
-            .shadow(color: strokeColor.opacity(0.08), radius: 10, x: 0, y: 4)
+            .shadow(color: Theme.glowBlue.opacity(0.18), radius: 10, x: 0, y: 4)
     }
 }
 
