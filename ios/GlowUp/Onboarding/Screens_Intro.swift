@@ -37,9 +37,9 @@ struct BAPair: Identifiable {
 /// to the next pair — which replays the same sweep.
 struct BeforeAfterShowcase: View {
     private let pairs: [BAPair] = [
-        BAPair(before: "life4", after: "fit1",  label: "Day 1  →  Day 75"),
-        BAPair(before: "food5", after: "fit5",  label: "Day 1  →  Day 75"),
-        BAPair(before: "life2", after: "life6", label: "Day 1  →  Day 75"),
+        BAPair(before: "glow3",  after: "glow1",  label: "Day 1  →  Day 75"),
+        BAPair(before: "glow7",  after: "glow5",  label: "Day 1  →  Day 75"),
+        BAPair(before: "glow14", after: "glow11", label: "Day 1  →  Day 75"),
     ]
     @State private var index = 0
     @State private var split: CGFloat = 0.24
@@ -363,18 +363,18 @@ struct Welcome4: View {
     @EnvironmentObject var vm: OnboardingVM
     // Dense scrapbook scatter — cut-outs filling every edge around the title.
     let items: [(String, CGFloat, CGFloat, CGFloat, Double)] = [
-        ("fit8",     0, -262, 60,  5),  ("fit1",  -118, -224, 70, -9),
-        ("food2",  120, -226, 64,  9),  ("life4", -150, -150, 58,  7),
-        ("food6",  150, -156, 60, -8),  ("fit3",   -58, -176, 52, -4),
-        ("life1",   62, -178, 50,  6),  ("food7", -152,  -34, 62, -6),
-        ("life8",  152,  -44, 60,  8),  ("fit4",  -150,   86, 56,  4),
-        ("food3",  152,   80, 56, -7),  ("fit5",  -120,  150, 66, -10),
-        ("food9",  120,  148, 70,  7),  ("life3",  -56,  168, 54, -7),
-        ("fit7",    60,  172, 56,  9),  ("food4", -150,  214, 52,  6),
-        ("life6",  150,  214, 54, -9),  ("fit2",    -6,  256, 64,  5),
-        ("food1", -112,  268, 54, -6),  ("life5",  112,  268, 56,  8),
-        ("fit9",  -150,  300, 48, 10),  ("food5",  150,  300, 48, -10),
-        ("life2",    0,  312, 56,  4),
+        ("glow1",    0, -262, 60,  5),  ("glow2", -118, -224, 70, -9),
+        ("food2",  120, -226, 64,  9),  ("glow4", -150, -150, 58,  7),
+        ("glow6",  150, -156, 60, -8),  ("fit3",   -58, -176, 52, -4),
+        ("glow8",   62, -178, 50,  6),  ("glow9", -152,  -34, 62, -6),
+        ("life8",  152,  -44, 60,  8),  ("glow10",-150,   86, 56,  4),
+        ("food3",  152,   80, 56, -7),  ("glow12",-120,  150, 66, -10),
+        ("glow13", 120,  148, 70,  7),  ("life3",  -56,  168, 54, -7),
+        ("glow15",  60,  172, 56,  9),  ("glow16",-150,  214, 52,  6),
+        ("life6",  150,  214, 54, -9),  ("glow17",  -6,  256, 64,  5),
+        ("glow18",-112,  268, 54, -6),  ("glow19", 112,  268, 56,  8),
+        ("fit9",  -150,  300, 48, 10),  ("glow20", 150,  300, 48, -10),
+        ("glow22",   0,  312, 56,  4),
     ]
     var body: some View {
         Scaffold(showBack: false, progress: nil) {

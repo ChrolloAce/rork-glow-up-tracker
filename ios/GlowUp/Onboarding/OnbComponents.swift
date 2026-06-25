@@ -199,14 +199,17 @@ enum Collage {
     static let fit  = (1...10).map { "fit\($0)" }
     static let life = (1...8).map { "life\($0)" }
     static let food = (1...10).map { "food\($0)" }
+    static let glow = (1...23).map { "glow\($0)" }
 
-    /// Interleaved blend so collages mix fitness / lifestyle / food.
+    /// Interleaved blend so collages mix fitness / lifestyle / food / new glow art.
     static let mixed: [String] = {
         var out: [String] = []
-        let m = max(fit.count, life.count, food.count)
+        let m = max(fit.count, life.count, food.count, glow.count)
         for i in 0..<m {
             if i < fit.count  { out.append(fit[i]) }
+            if i < glow.count { out.append(glow[i]) }
             if i < food.count { out.append(food[i]) }
+            if i < glow.count, i + 12 < glow.count { out.append(glow[i + 12]) }
             if i < life.count { out.append(life[i]) }
         }
         return out
