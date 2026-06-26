@@ -12,13 +12,12 @@ struct WeightScreen: View {
                 Text("\(Int(vm.weightLbs)) lb")
                     .font(.serif(56, .bold)).foregroundStyle(AppColor.ink)
                     .contentTransition(.numericText())
-                Slider(value: $vm.weightLbs, in: 80...350, step: 1)
-                    .tint(AppColor.ink).padding(.horizontal, 8)
+                TickSlider(value: $vm.weightLbs, range: 80...350)
+                    .padding(.horizontal, 8)
                 Text("Slide to set your current weight")
                     .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
                 CollageGrid(count: 3, seed: 7).frame(height: 100).clipped()
             }
-            .sensoryFeedback(.selection, trigger: Int(vm.weightLbs))
         } footer: {
             PrimaryButton(title: "Continue") { vm.next() }
         }
@@ -59,12 +58,11 @@ struct WeightLossScreen: View {
                 Text("\(Int(vm.targetLossLbs)) lb")
                     .font(.serif(56, .bold)).foregroundStyle(AppColor.ink)
                     .contentTransition(.numericText())
-                Slider(value: $vm.targetLossLbs, in: 3...80, step: 1)
-                    .tint(AppColor.ink).padding(.horizontal, 8)
+                TickSlider(value: $vm.targetLossLbs, range: 3...80)
+                    .padding(.horizontal, 8)
                 Text("A healthy, realistic goal works best 💛")
                     .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
             }
-            .sensoryFeedback(.selection, trigger: Int(vm.targetLossLbs))
         } footer: {
             PrimaryButton(title: "Continue") { vm.next() }
         }
@@ -86,13 +84,12 @@ struct HeightScreen: View {
                 Display(lead: "How ", emph: "tall", tail: " are you?", size: 32)
                 Text(heightLabel)
                     .font(.serif(56, .bold)).foregroundStyle(AppColor.ink)
-                Slider(value: $vm.heightInches, in: 48...84, step: 1)
-                    .tint(AppColor.ink).padding(.horizontal, 8)
+                TickSlider(value: $vm.heightInches, range: 48...84)
+                    .padding(.horizontal, 8)
                 Text("Slide to set your height")
                     .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
                 CollageGrid(count: 3, seed: 5).frame(height: 100).clipped()
             }
-            .sensoryFeedback(.selection, trigger: Int(vm.heightInches))
         } footer: {
             PrimaryButton(title: "Continue") { vm.next() }
         }
@@ -174,12 +171,6 @@ struct BuildingPlanScreen: View {
                     }
                 }
                 .padding(.horizontal, 50)
-
-                PrimaryButton(title: "See my plan") { vm.next() }
-                    .padding(.horizontal, 24)
-                    .opacity(doneCount >= tasks.count ? 1 : 0)
-                    .animation(.easeOut(duration: 0.4), value: doneCount)
-                    .disabled(doneCount < tasks.count)
             }
             .padding(.horizontal, 24)
         }
@@ -199,5 +190,61 @@ struct BuildingPlanScreen: View {
                 }
             }
         }
+        // plan is built — continue automatically
+        DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration + 0.6) {
+            vm.next()
+        }
+    }
+}
+
+// MARK: - Tick slider (ruler-style, haptic per tick, easy drag)
+
+struct TickSlider: View {
+    @Binding var value: Double
+    var range: ClosedRange<Double>
+    var step: Double = 1
+    private let tickCount = 41
+    @State private var lastStep: Double = .nan
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let span = max(range.upperBound - range.lowerBound, 0.0001)
+            let frac = min(max((value - range.lowerBound) / span, 0), 1)
+            ZStack(alignment: .leading) {
+                // ruler ticks
+                HStack(spacing: 0) {
+                    ForEach(0..<tickCount, id: \.self) { i in
+                        Rectangle()
+                            .fill(AppColor.line)
+                            .frame(width: 1.5, height: i % 5 == 0 ? 22 : 12)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(height: 24)
+                // current position indicator
+                Capsule()
+                    .fill(AppColor.ink)
+                    .frame(width: 4, height: 34)
+                    .offset(x: CGFloat(frac) * w - 2)
+            }
+            .frame(height: 44)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { g in
+                        let x = min(max(0, g.location.x), w)
+                        let raw = range.lowerBound + Double(x / w) * span
+                        let snapped = (raw / step).rounded() * step
+                        let clamped = min(max(range.lowerBound, snapped), range.upperBound)
+                        if clamped != lastStep {
+                            lastStep = clamped
+                            Haptics.select()
+                        }
+                        value = clamped
+                    }
+            )
+        }
+        .frame(height: 44)
     }
 }
