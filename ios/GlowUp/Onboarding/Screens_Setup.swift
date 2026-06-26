@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 // 16 — When do you start?
 struct StartDateScreen: View {
@@ -67,6 +68,8 @@ struct Ruler: View {
 // 18/19 — Save your progress (auth)
 struct SaveProgressScreen: View {
     @EnvironmentObject var vm: OnboardingVM
+    @EnvironmentObject var auth: AuthService
+
     var body: some View {
         Scaffold(progress: Step.saveProgress.progress, onBack: vm.back) {
             VStack(spacing: 24) {
@@ -77,8 +80,29 @@ struct SaveProgressScreen: View {
                 CollageGrid(count: 3, seed: 2).frame(height: 110).clipped()
             }
         } footer: {
-            PrimaryButton(title: "Continue with Apple", systemImage: "apple.logo") { vm.next() }
-            PrimaryButton(title: "Continue with Google", filled: false) { vm.next() }
+            SignInWithAppleButton(.continue) { request in
+                auth.prepareAppleRequest(request)
+            } onCompletion: { result in
+                Task {
+                    await auth.handleAppleCompletion(result)
+                    if !auth.displayName.isEmpty { vm.name = auth.displayName }
+                    vm.next()
+                }
+            }
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: 52)
+            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+
+            PrimaryButton(title: "Continue with Google", filled: false) {
+                Task {
+                    await auth.signInWithGoogle()
+                    if !auth.displayName.isEmpty { vm.name = auth.displayName }
+                    vm.next()
+                }
+            }
+
+            Button("Maybe later") { vm.next() }
+                .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
         }
     }
 }

@@ -1,9 +1,22 @@
 import SwiftUI
 import CoreText
 import SuperwallKit
+import FirebaseCore
+import GoogleSignIn
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        FirebaseApp.configure()
+        return true
+    }
+}
 
 @main
 struct GlowUpApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject private var auth = AuthService.shared
+
     init() {
         FontLoader.registerAll()
         Superwall.configure(apiKey: "pk_g0izh0xV3YAoFlTRZCs90")
@@ -12,6 +25,11 @@ struct GlowUpApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .environmentObject(auth)
+                .task { auth.bootstrap() }
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }

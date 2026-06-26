@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		15BE94AC6790AE34D9F0C207 /* SuperwallKit in Frameworks */ = {isa = PBXBuildFile; productRef = 40905C9DE6A199BE2FDD16D2 /* SuperwallKit */; };
+		63E8ED10FB9F801F4D9AA68D /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 07C3DCCBD540038024647107 /* GoogleSignIn */; };
+		8C71DFDE975999C75D7CCBCD /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 07D85EF28687F53DF75CCB59 /* FirebaseCore */; };
+		ADC7D833C91B2AC55A8DD0BB /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = C83DC6CBF99F2795A30F553B /* FirebaseFirestore */; };
+		DB8C53A349209A945E6081E8 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3D7DFE5B70D3393A595F3699 /* FirebaseAuth */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,16 +40,22 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		105FC57C2E9EAD3100EA8BCF /* GlowUp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = GlowUp;
 			sourceTree = "<group>";
 		};
 		105FC58C2E9EAD3200EA8BCF /* GlowUpTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = GlowUpTests;
 			sourceTree = "<group>";
 		};
 		105FC5962E9EAD3200EA8BCF /* GlowUpUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = GlowUpUITests;
 			sourceTree = "<group>";
 		};
@@ -57,6 +67,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				15BE94AC6790AE34D9F0C207 /* SuperwallKit in Frameworks */,
+				8C71DFDE975999C75D7CCBCD /* FirebaseCore in Frameworks */,
+				DB8C53A349209A945E6081E8 /* FirebaseAuth in Frameworks */,
+				ADC7D833C91B2AC55A8DD0BB /* FirebaseFirestore in Frameworks */,
+				63E8ED10FB9F801F4D9AA68D /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +132,10 @@
 			name = GlowUp;
 			packageProductDependencies = (
 				40905C9DE6A199BE2FDD16D2 /* SuperwallKit */,
+				07D85EF28687F53DF75CCB59 /* FirebaseCore */,
+				3D7DFE5B70D3393A595F3699 /* FirebaseAuth */,
+				C83DC6CBF99F2795A30F553B /* FirebaseFirestore */,
+				07C3DCCBD540038024647107 /* GoogleSignIn */,
 			);
 			productName = GlowUp;
 			productReference = 105FC57A2E9EAD3100EA8BCF /* GlowUp.app */;
@@ -199,6 +217,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C040C6193D90BCD0333E7B63 /* XCRemoteSwiftPackageReference "Superwall-iOS" */,
+				95DEF3A05C5D5D3EF20EA4CA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				D04D44CB1DEF82EE1F3D95F8 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 105FC57B2E9EAD3100EA8BCF /* Products */;
@@ -400,6 +420,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GlowUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 779NX4HZ2Y;
@@ -443,6 +464,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GlowUp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 779NX4HZ2Y;
@@ -607,6 +629,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		95DEF3A05C5D5D3EF20EA4CA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
 		C040C6193D90BCD0333E7B63 /* XCRemoteSwiftPackageReference "Superwall-iOS" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/superwall/Superwall-iOS";
@@ -615,13 +645,41 @@
 				minimumVersion = 4.0.0;
 			};
 		};
+		D04D44CB1DEF82EE1F3D95F8 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		07C3DCCBD540038024647107 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D04D44CB1DEF82EE1F3D95F8 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		07D85EF28687F53DF75CCB59 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 95DEF3A05C5D5D3EF20EA4CA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		3D7DFE5B70D3393A595F3699 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 95DEF3A05C5D5D3EF20EA4CA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
 		40905C9DE6A199BE2FDD16D2 /* SuperwallKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C040C6193D90BCD0333E7B63 /* XCRemoteSwiftPackageReference "Superwall-iOS" */;
 			productName = SuperwallKit;
+		};
+		C83DC6CBF99F2795A30F553B /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 95DEF3A05C5D5D3EF20EA4CA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

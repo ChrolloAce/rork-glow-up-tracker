@@ -35,11 +35,11 @@ let glowAvatars: [String] = [
 
 struct CommunityView: View {
     @Bindable var viewModel: GlowViewModel
+    @StateObject private var community = CommunityService.shared
     @State private var filter: CommunityFilter = .sameChallenge
     @State private var showLeaderboard: Bool = false
     @State private var showNotes: Bool = false
     @State private var showComposer: Bool = false
-    @State private var posts: [CommunityPost] = CommunityPost.samples
 
     enum CommunityFilter: String, CaseIterable, Identifiable {
         case sameChallenge = "Same Challenge"
@@ -90,23 +90,29 @@ struct CommunityView: View {
             .sensoryFeedback(.impact(weight: .medium), trigger: showComposer)
         }
         .background(Theme.screenGradient.ignoresSafeArea())
+        .onAppear {
+            community.start()
+            community.syncProfile(
+                name: viewModel.userName.isEmpty ? "You" : viewModel.userName,
+                avatar: viewModel.avatarURL,
+                score: max(viewModel.currentDay * 120, 100),
+                level: 7,
+                streak: viewModel.currentDay
+            )
+        }
         .fullScreenCover(isPresented: $showLeaderboard) {
             CommunityLeaderboardView(viewModel: viewModel)
         }
         .sheet(isPresented: $showComposer) {
             ComposerSheet { title, body in
-                let new = CommunityPost(
-                    username: "You",
+                community.createPost(
+                    username: viewModel.userName.isEmpty ? "You" : viewModel.userName,
                     avatar: viewModel.avatarURL,
-                    age: 24,
-                    level: 7,
                     title: title,
                     body: body,
-                    likes: 0,
-                    comments: 0,
-                    timestamp: "now"
+                    streak: viewModel.currentDay,
+                    level: 7
                 )
-                posts.insert(new, at: 0)
             }
             .presentationDetents([.medium, .large])
             .adaptivePresentationBackground()
@@ -214,8 +220,12 @@ struct CommunityView: View {
     private var communityFeed: some View {
         ScrollView {
             LazyVStack(spacing: 14) {
-                ForEach($posts) { $post in
-                    PostCard(post: $post)
+                if community.posts.isEmpty {
+                    emptyFeed
+                } else {
+                    ForEach(community.posts) { post in
+                        PostCard(post: post) { community.toggleLike(post) }
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -225,12 +235,30 @@ struct CommunityView: View {
         .scrollIndicators(.hidden)
     }
 
+    private var emptyFeed: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 30))
+                .foregroundStyle(Theme.pink)
+            Text("Be the first to post a win")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(Theme.textPrimary)
+            Text("Share a milestone and inspire the community.")
+                .font(.system(size: 13))
+                .foregroundStyle(Theme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
+    }
+
 }
 
 // MARK: - Post Card
 
 struct PostCard: View {
-    @Binding var post: CommunityPost
+    let post: FeedPost
+    var onLike: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -271,42 +299,42 @@ struct PostCard: View {
                     .foregroundStyle(Theme.textPrimary)
                     .multilineTextAlignment(.leading)
 
-                Text(post.body)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(4)
-                    .multilineTextAlignment(.leading)
+                if !post.body.isEmpty {
+                    Text(post.body)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(4)
+                        .multilineTextAlignment(.leading)
+                }
             }
 
             HStack(spacing: 20) {
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        post.isLiked.toggle()
-                    }
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { onLike() }
                 } label: {
                     HStack(spacing: 5) {
-                        Image(systemName: post.isLiked ? "heart.fill" : "heart")
+                        Image(systemName: post.isLikedByMe ? "heart.fill" : "heart")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(post.isLiked ? Theme.pink : Theme.textTertiary)
-                        Text("\(post.likes + (post.isLiked ? 1 : 0))")
+                            .foregroundStyle(post.isLikedByMe ? Theme.pink : Theme.textTertiary)
+                        Text("\(post.likeCount)")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(Theme.textSecondary)
                     }
                 }
-                .sensoryFeedback(.impact(weight: .light), trigger: post.isLiked)
+                .sensoryFeedback(.impact(weight: .light), trigger: post.isLikedByMe)
 
                 HStack(spacing: 5) {
                     Image(systemName: "bubble.left")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Theme.textTertiary)
-                    Text("\(post.comments)")
+                    Text("\(post.commentCount)")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(Theme.textSecondary)
                 }
 
                 Spacer()
 
-                Text(post.timestamp)
+                Text(post.relativeTime)
                     .font(.system(size: 11))
                     .foregroundStyle(Theme.textTertiary)
             }
@@ -491,12 +519,20 @@ extension CommunityPost {
 
 struct CommunityLeaderboardView: View {
     @Bindable var viewModel: GlowViewModel
+    @StateObject private var community = CommunityService.shared
     @Environment(\.dismiss) private var dismiss
     @State private var podiumAppeared: Bool = false
     @State private var listAppeared: Bool = false
 
     private var users: [LeaderboardUser] {
-        [
+        // Prefer live Firestore leaders; fall back to seed data until users sync.
+        if !community.leaders.isEmpty {
+            return community.leaders.map {
+                LeaderboardUser(name: $0.name, score: $0.score, avatar: $0.avatar,
+                                trend: .same, level: $0.level, streak: $0.streak)
+            }
+        }
+        return [
             .init(name: "Aurora", score: 9_840, avatar: glowAvatars[1], trend: .same, level: 18, streak: 42),
             .init(name: "Mira", score: 9_410, avatar: glowAvatars[3], trend: .up, level: 16, streak: 38),
             .init(name: "Sienna", score: 9_120, avatar: glowAvatars[2], trend: .down, level: 15, streak: 30),
@@ -542,6 +578,7 @@ struct CommunityLeaderboardView: View {
         .background(Theme.screenGradient.ignoresSafeArea())
         .scrollIndicators(.hidden)
         .onAppear {
+            community.start()
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
                 podiumAppeared = true
             }
