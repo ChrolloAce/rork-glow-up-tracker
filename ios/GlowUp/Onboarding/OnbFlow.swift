@@ -46,17 +46,16 @@ enum Step: Int, CaseIterable {
     case name, hearAbout, why, idealDay, biggestChallenge
     case weight, goal, weightLoss, height, diet, buildingPlan
     case selectChallenge, challengeDetail
-    case length, saveProgress
-    case sticker
-    case personalizing, congrats, paywall
+    case saveProgress
+    case dayGrid, congrats, paywall
 
     /// Progress only shown during the "work" portion of the flow.
     var progress: Double? {
         switch self {
         case .welcome1, .globe, .welcome3, .welcome4: return nil
-        case .congrats, .paywall: return nil
+        case .dayGrid, .congrats, .paywall: return nil
         default:
-            let working = Step.allCases.filter { $0.rawValue >= Step.name.rawValue && $0.rawValue <= Step.sticker.rawValue }
+            let working = Step.allCases.filter { $0.rawValue >= Step.name.rawValue && $0.rawValue <= Step.saveProgress.rawValue }
             guard let idx = working.firstIndex(of: self) else { return nil }
             return Double(idx + 1) / Double(working.count)
         }
@@ -220,10 +219,8 @@ struct OnboardingFlow: View {
         case .buildingPlan:     BuildingPlanScreen()
         case .selectChallenge:  SelectChallengeScreen()
         case .challengeDetail:  ChallengeDetailScreen()
-        case .length:           LengthScreen()
         case .saveProgress:     SaveProgressScreen()
-        case .sticker:          StickerScreen()
-        case .personalizing:    LoaderScreen(lead: "Personalizing ", emph: "your", tail: " space")
+        case .dayGrid:          DayGridReveal()
         case .congrats:         CongratsScreen()
         case .paywall:          PaywallScreen()
         }

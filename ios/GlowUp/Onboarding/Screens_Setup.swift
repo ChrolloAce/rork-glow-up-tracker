@@ -1,29 +1,6 @@
 import SwiftUI
 import AuthenticationServices
 
-// 17 — Set challenge length
-struct LengthScreen: View {
-    @EnvironmentObject var vm: OnboardingVM
-    var body: some View {
-        Scaffold(progress: Step.length.progress, onBack: vm.back) {
-            VStack(spacing: 24) {
-                Spacer(minLength: 20)
-                Display(lead: "Set challenge\n", emph: "length?", size: 32)
-                Text("\(vm.lengthDays) days").font(.serif(48, .bold)).foregroundStyle(AppColor.ink)
-                    .contentTransition(.numericText())
-                TickSlider(value: Binding(
-                    get: { Double(vm.lengthDays) },
-                    set: { vm.lengthDays = Int($0) }), range: 7...90)
-                    .padding(.horizontal, 8)
-                Text("Slide to set how many days")
-                    .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
-            }
-        } footer: {
-            PrimaryButton(title: "Continue") { vm.next() }
-        }
-    }
-}
-
 // 18/19 — Save your progress (auth)
 struct SaveProgressScreen: View {
     @EnvironmentObject var vm: OnboardingVM
