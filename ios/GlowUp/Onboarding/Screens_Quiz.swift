@@ -8,13 +8,11 @@ struct HearAboutScreen: View {
         ZStack(alignment: .bottom) {
             AppColor.cream.ignoresSafeArea()
 
-            // Decorative cut-out bleeding from the bottom-right
-            Image("life8")
-                .resizable().scaledToFill()
-                .frame(width: 440, height: 440)
-                .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
-                .mask(LinearGradient(colors: [.clear, .black, .black], startPoint: .top, endPoint: .center))
-                .offset(x: 96, y: 150)
+            // Transparent cut-out bleeding from the bottom-right
+            Image("cut_friends")
+                .resizable().scaledToFit()
+                .frame(width: 300)
+                .offset(x: 70, y: 150)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 

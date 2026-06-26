@@ -45,8 +45,8 @@ enum Step: Int, CaseIterable {
     case welcome1, globe, welcome2, welcome3, welcome4
     case name, hearAbout, why, idealDay, biggestChallenge, findingChallenge
     case selectChallenge, challengeDetail
-    case startDate, length, saveProgress, rating
-    case partnerStat, matching, partnerMatch, inviteFriends, sticker
+    case startDate, length, saveProgress
+    case sticker
     case personalizing, congrats, paywall
 
     /// Progress only shown during the "work" portion of the flow.
@@ -176,11 +176,6 @@ struct OnboardingFlow: View {
         case .startDate:        StartDateScreen()
         case .length:           LengthScreen()
         case .saveProgress:     SaveProgressScreen()
-        case .rating:           RatingScreen()
-        case .partnerStat:      PartnerStatScreen()
-        case .matching:         LoaderScreen(lead: "Matching ", emph: "your", tail: " energy", subtitle: "Among 24,000+ women")
-        case .partnerMatch:     PartnerMatchScreen()
-        case .inviteFriends:    InviteFriendsScreen()
         case .sticker:          StickerScreen()
         case .personalizing:    LoaderScreen(lead: "Personalizing ", emph: "your", tail: " space")
         case .congrats:         CongratsScreen()

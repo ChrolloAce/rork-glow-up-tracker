@@ -376,6 +376,14 @@ struct Welcome4: View {
         ("fit9",  -150,  300, 48, 10),  ("glow20", 150,  300, 48, -10),
         ("glow22",   0,  312, 56,  4),
     ]
+    // Transparent hero cut-outs (name, x, y, width, rotation) — true scrapbook stickers.
+    let cutouts: [(String, CGFloat, CGFloat, CGFloat, Double)] = [
+        ("cut_book",     -98, -150, 120, -10),
+        ("cut_clock",     108, -118,  96,   9),
+        ("cut_dumbbell",  122,  120, 124,   8),
+        ("cut_tulips",   -104,  152, 120,  -8),
+        ("cut_friends",     0,  252, 172,   0),
+    ]
     var body: some View {
         Scaffold(showBack: false, progress: nil) {
             ZStack {
@@ -388,9 +396,17 @@ struct Welcome4: View {
                         .shadow(color: .black.opacity(0.12), radius: 6, y: 3)
                         .offset(x: it.1, y: it.2)
                 }
+                // Transparent cut-out stickers on top — no border, free-floating.
+                ForEach(Array(cutouts.enumerated()), id: \.offset) { _, c in
+                    Image(c.0).resizable().scaledToFit()
+                        .frame(width: c.3)
+                        .rotationEffect(.degrees(c.4))
+                        .shadow(color: .black.opacity(0.20), radius: 9, y: 5)
+                        .offset(x: c.1, y: c.2)
+                }
                 Display(lead: "Become\n", emph: "“that girl”", size: 36)
                     .padding(.horizontal, 14).padding(.vertical, 10)
-                    .background(AppColor.cream.opacity(0.78), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(AppColor.cream.opacity(0.82), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 620)
@@ -406,7 +422,6 @@ struct Welcome4: View {
 struct NameScreen: View {
     @EnvironmentObject var vm: OnboardingVM
     @FocusState private var focused: Bool
-    let faint = ["life1", "food4", "life5", "food7", "fit3"]
 
     var body: some View {
         Scaffold(showBack: true, progress: Step.name.progress, onBack: vm.back) {
@@ -422,15 +437,6 @@ struct NameScreen: View {
                     .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(focused ? AppColor.ink.opacity(0.4) : AppColor.line, lineWidth: 1))
 
-                HStack(spacing: 10) {
-                    ForEach(faint, id: \.self) { n in
-                        Image(n).resizable().scaledToFill().frame(height: 54)
-                            .frame(maxWidth: .infinity).clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .opacity(0.22).saturation(0.5)
-                    }
-                }
-                .padding(.top, 6)
                 Spacer()
             }
         } footer: {
