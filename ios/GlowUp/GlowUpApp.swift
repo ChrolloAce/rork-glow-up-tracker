@@ -44,20 +44,27 @@ enum FontLoader {
     }
 }
 
-/// Shows the onboarding flow on first launch, then the main app.
+/// Onboarding first, then a Terms gate, then the main app.
 struct RootView: View {
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
+    @AppStorage("didAcceptTerms") private var didAcceptTerms = false
 
     var body: some View {
-        if didCompleteOnboarding {
-            ContentView()
-        } else {
+        if !didCompleteOnboarding {
             OnboardingFlow {
                 withAnimation(.easeInOut(duration: 0.4)) {
                     didCompleteOnboarding = true
                 }
             }
             .preferredColorScheme(.light)
+        } else if !didAcceptTerms {
+            TermsGateView {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    didAcceptTerms = true
+                }
+            }
+        } else {
+            ContentView()
         }
     }
 }

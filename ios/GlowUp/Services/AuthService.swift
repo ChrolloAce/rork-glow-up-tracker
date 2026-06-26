@@ -5,6 +5,7 @@ import AuthenticationServices
 import CryptoKit
 import FirebaseCore
 import FirebaseAuth
+import FirebaseFirestore
 import GoogleSignIn
 
 /// Central authentication for the app: anonymous session by default (so the
@@ -129,6 +130,27 @@ final class AuthService: ObservableObject {
     func signOut() {
         try? Auth.auth().signOut()
         GIDSignIn.sharedInstance.signOut()
+    }
+
+    /// Permanently delete the user's account and their profile document.
+    /// Returns true on success; sets `errorMessage` (e.g. requires recent login) otherwise.
+    @discardableResult
+    func deleteAccount() async -> Bool {
+        guard let user = Auth.auth().currentUser else { return false }
+        let uid = user.uid
+        // best-effort cleanup of the leaderboard profile doc
+        try? await Firestore.firestore().collection("users").document(uid).delete()
+        do {
+            try await user.delete()
+            GIDSignIn.sharedInstance.signOut()
+            self.user = nil
+            return true
+        } catch {
+            errorMessage = (error as NSError).code == AuthErrorCode.requiresRecentLogin.rawValue
+                ? "For your security, please sign in again before deleting your account."
+                : error.localizedDescription
+            return false
+        }
     }
 
     // MARK: - Helpers

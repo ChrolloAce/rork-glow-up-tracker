@@ -14,24 +14,6 @@ struct LeaderboardUser: Identifiable, Hashable {
     }
 }
 
-struct CommunityPost: Identifiable, Hashable {
-    let id = UUID()
-    let username: String
-    let avatar: String
-    let age: Int
-    let level: Int
-    var streak: Int = 0
-    let title: String
-    let body: String
-    let likes: Int
-    let comments: Int
-    let timestamp: String
-    var isLiked: Bool = false
-}
-
-let glowAvatars: [String] = [
-    "character_2", "character_5", "character_9", "character_14", "character_22"
-]
 
 struct CommunityView: View {
     @Bindable var viewModel: GlowViewModel
@@ -490,31 +472,6 @@ struct NotesSheet: View {
 
 // MARK: - Sample Data
 
-extension CommunityPost {
-    static let samples: [CommunityPost] = [
-        .init(username: "Aurora", avatar: glowAvatars[1], age: 26, level: 12, streak: 42,
-              title: "Completed Day 42 of 75 Hard",
-              body: "Two workouts done, gallon of water in, diet locked. Hardest day mentally but I showed up anyway. Keep going girls.",
-              likes: 248, comments: 42, timestamp: "2h"),
-        .init(username: "Mira", avatar: glowAvatars[3], age: 23, level: 8, streak: 30,
-              title: "Hit a 30 day streak",
-              body: "30 days clean eating and no added sugar. My energy is completely different and the cravings are basically gone.",
-              likes: 186, comments: 31, timestamp: "4h"),
-        .init(username: "Sienna", avatar: glowAvatars[2], age: 29, level: 15, streak: 21,
-              title: "Skin is actually glowing",
-              body: "Three weeks into the Glow Up challenge. AM and PM skincare every day plus my water and my face has never looked better.",
-              likes: 174, comments: 28, timestamp: "8h"),
-        .init(username: "Camille", avatar: glowAvatars[0], age: 25, level: 6, streak: 12,
-              title: "All habits done today",
-              body: "Movement, water, steps, clean eating, reading. Five for five. Small wins add up. Day 12 in the books.",
-              likes: 212, comments: 24, timestamp: "1d"),
-        .init(username: "Naomi", avatar: glowAvatars[4], age: 31, level: 18, streak: 75,
-              title: "Finished 75 Hard",
-              body: "I actually did it. 75 days, zero misses. If you're on day 1 reading this, just start. Future you will thank you.",
-              likes: 521, comments: 87, timestamp: "1d")
-    ]
-}
-
 // MARK: - Leaderboard Screen
 
 struct CommunityLeaderboardView: View {
@@ -525,26 +482,10 @@ struct CommunityLeaderboardView: View {
     @State private var listAppeared: Bool = false
 
     private var users: [LeaderboardUser] {
-        // Prefer live Firestore leaders; fall back to seed data until users sync.
-        if !community.leaders.isEmpty {
-            return community.leaders.map {
-                LeaderboardUser(name: $0.name, score: $0.score, avatar: $0.avatar,
-                                trend: .same, level: $0.level, streak: $0.streak)
-            }
+        community.leaders.map {
+            LeaderboardUser(name: $0.name, score: $0.score, avatar: $0.avatar,
+                            trend: .same, level: $0.level, streak: $0.streak)
         }
-        return [
-            .init(name: "Aurora", score: 9_840, avatar: glowAvatars[1], trend: .same, level: 18, streak: 42),
-            .init(name: "Mira", score: 9_410, avatar: glowAvatars[3], trend: .up, level: 16, streak: 38),
-            .init(name: "Sienna", score: 9_120, avatar: glowAvatars[2], trend: .down, level: 15, streak: 30),
-            .init(name: "Camille", score: 7_980, avatar: glowAvatars[0], trend: .up, level: 12, streak: 24),
-            .init(name: "Naomi", score: 7_640, avatar: glowAvatars[4], trend: .down, level: 11, streak: 22),
-            .init(name: "Lila", score: 7_120, avatar: glowAvatars[1], trend: .up, level: 10, streak: 19),
-            .init(name: "Chiara", score: 6_870, avatar: glowAvatars[2], trend: .same, level: 9, streak: 17),
-            .init(name: "Esme", score: 6_440, avatar: glowAvatars[0], trend: .down, level: 9, streak: 14),
-            .init(name: "Zara", score: 6_180, avatar: glowAvatars[4], trend: .up, level: 8, streak: 12),
-            .init(name: "Petra", score: 5_990, avatar: glowAvatars[3], trend: .down, level: 8, streak: 10),
-            .init(name: "You", score: 5_720, avatar: viewModel.avatarURL, trend: .up, level: 7, streak: 8)
-        ]
     }
 
     private var podium: [LeaderboardUser] { Array(users.prefix(3)) }

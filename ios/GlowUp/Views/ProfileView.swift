@@ -15,6 +15,9 @@ struct ProfileView: View {
     @State private var isImporting: Bool = false
     @State private var importToast: String? = nil
     @State private var showLogoutConfirm: Bool = false
+    @State private var showDeleteConfirm: Bool = false
+    @State private var isDeleting: Bool = false
+    @EnvironmentObject private var auth: AuthService
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding: Bool = true
     @State private var remindMorning: Bool = true
     @State private var remindEvening: Bool = true
@@ -37,6 +40,7 @@ struct ProfileView: View {
                     connectionsCard
                     aboutCard
                     logoutButton
+                    deleteAccountButton
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
@@ -93,6 +97,44 @@ struct ProfileView: View {
         } message: {
             Text("You'll go back to the beginning of onboarding. Your data is kept.")
         }
+        .confirmationDialog("Delete account?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete My Account", role: .destructive) {
+                Task {
+                    isDeleting = true
+                    let ok = await auth.deleteAccount()
+                    isDeleting = false
+                    if ok {
+                        auth.bootstrap()                 // fresh anonymous session
+                        withAnimation { didCompleteOnboarding = false }
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes your account, profile, and posts. This can't be undone.")
+        }
+    }
+
+    private var deleteAccountButton: some View {
+        Button(role: .destructive) {
+            showDeleteConfirm = true
+        } label: {
+            HStack(spacing: 8) {
+                if isDeleting {
+                    ProgressView().controlSize(.small).tint(Theme.textTertiary)
+                } else {
+                    Image(systemName: "trash")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                Text(isDeleting ? "Deleting…" : "Delete Account")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(Theme.textTertiary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 46)
+        }
+        .buttonStyle(.plain)
+        .disabled(isDeleting)
     }
 
     private var logoutButton: some View {

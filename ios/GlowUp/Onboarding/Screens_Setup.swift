@@ -49,16 +49,28 @@ struct SaveProgressScreen: View {
                 }
             }
             .signInWithAppleButtonStyle(.black)
+            .frame(maxWidth: .infinity)
             .frame(height: 52)
             .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
 
-            PrimaryButton(title: "Continue with Google", filled: false) {
+            Button {
                 Task {
                     await auth.signInWithGoogle()
                     if !auth.displayName.isEmpty { vm.name = auth.displayName }
                     vm.next()
                 }
+            } label: {
+                HStack(spacing: 10) {
+                    GoogleGLogo().frame(width: 19, height: 19)
+                    Text("Continue with Google")
+                        .font(.sans(16, .semibold)).foregroundStyle(AppColor.ink)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(.white, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(AppColor.line, lineWidth: 1))
             }
+            .buttonStyle(.plain)
 
             Button("Maybe later") { vm.next() }
                 .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
@@ -118,6 +130,22 @@ struct ProgressMarquee: View {
             .background(.white, in: Capsule())
             .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
             .padding(8)
+    }
+}
+
+/// Google's multi-color "G" mark for the sign-in button.
+struct GoogleGLogo: View {
+    var body: some View {
+        Text("G")
+            .font(.system(size: 18, weight: .bold, design: .rounded))
+            .foregroundStyle(
+                AngularGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "4285F4"), Color(hex: "34A853"),
+                        Color(hex: "FBBC05"), Color(hex: "EA4335"),
+                        Color(hex: "4285F4")]),
+                    center: .center, angle: .degrees(-90))
+            )
     }
 }
 
