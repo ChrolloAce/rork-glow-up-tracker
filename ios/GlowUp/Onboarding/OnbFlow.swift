@@ -12,7 +12,7 @@ struct OnbChallenge: Identifiable, Equatable {
 }
 
 let sampleChallenges: [OnbChallenge] = [
-    OnbChallenge(name: "Her 75 Challenge", joined: 17484, seed: 0, tasks: [
+    OnbChallenge(name: "75 Glow", joined: 17484, seed: 0, tasks: [
         "Eat clean (no junk food and no alcohol)",
         "Drink ONLY water 💧",
         "Walk 10,000 steps a day",

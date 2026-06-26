@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct LeaderboardUser: Identifiable, Hashable {
     let id = UUID()
@@ -116,7 +117,12 @@ struct CommunityView: View {
                 .adaptivePresentationBackground()
         }
         .sheet(item: $detailPost) { post in
-            PostDetailSheet(post: post, community: community)
+            PostDetailSheet(
+                post: post,
+                community: community,
+                currentName: viewModel.userName.isEmpty ? "You" : viewModel.userName,
+                currentAvatar: viewModel.avatarURL
+            )
         }
         .confirmationDialog("Report this post", isPresented: $showReportDialog, titleVisibility: .visible, presenting: actionPost) { post in
             ForEach(Self.reportReasons, id: \.self) { reason in
@@ -396,49 +402,77 @@ struct PostCard: View {
 struct PostDetailSheet: View {
     let post: FeedPost
     @ObservedObject var community: CommunityService
+    var currentName: String = "You"
+    var currentAvatar: String = ""
     @Environment(\.dismiss) private var dismiss
     @State private var showReport = false
     @State private var showBlock = false
+    @State private var comments: [Comment] = []
+    @State private var newComment = ""
+    @State private var sending = false
+    @State private var listener: ListenerRegistration?
+    @FocusState private var inputFocused: Bool
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 12) {
-                        AvatarView(url: post.avatar, size: 48)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(post.username)
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(Theme.textPrimary)
-                            Text("\(post.streak) day streak · \(post.relativeTime)")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Theme.textTertiary)
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack(spacing: 12) {
+                            AvatarView(url: post.avatar, size: 48)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(post.username)
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(Theme.textPrimary)
+                                Text("\(post.streak) day streak · \(post.relativeTime)")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.textTertiary)
+                            }
+                            Spacer()
                         }
-                        Spacer()
+
+                        Text(post.title)
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(Theme.textPrimary)
+
+                        if !post.body.isEmpty {
+                            Text(post.body)
+                                .font(.system(size: 15))
+                                .foregroundStyle(Theme.textSecondary)
+                        }
+
+                        HStack(spacing: 6) {
+                            Image(systemName: post.isLikedByMe ? "heart.fill" : "heart")
+                                .foregroundStyle(post.isLikedByMe ? Theme.pink : Theme.textTertiary)
+                            Text("\(post.likeCount) likes")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.textSecondary)
+                        }
+                        .padding(.top, 4)
+
+                        Divider().padding(.vertical, 6)
+
+                        Text("Comments")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Theme.textPrimary)
+
+                        if comments.isEmpty {
+                            Text("No comments yet. Be the first to cheer her on 💛")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.textTertiary)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(comments) { c in
+                                CommentRow(comment: c)
+                            }
+                        }
+
+                        Spacer(minLength: 0)
                     }
-
-                    Text(post.title)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(Theme.textPrimary)
-
-                    if !post.body.isEmpty {
-                        Text(post.body)
-                            .font(.system(size: 15))
-                            .foregroundStyle(Theme.textSecondary)
-                    }
-
-                    HStack(spacing: 6) {
-                        Image(systemName: post.isLikedByMe ? "heart.fill" : "heart")
-                            .foregroundStyle(post.isLikedByMe ? Theme.pink : Theme.textTertiary)
-                        Text("\(post.likeCount) likes")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Theme.textSecondary)
-                    }
-                    .padding(.top, 4)
-
-                    Spacer(minLength: 0)
+                    .padding(20)
                 }
-                .padding(20)
+
+                commentBar
             }
             .background(Theme.screenGradient.ignoresSafeArea())
             .navigationTitle("Post")
@@ -476,7 +510,79 @@ struct PostDetailSheet: View {
             } message: {
                 Text("You won't see posts from this person anymore.")
             }
+            .onAppear {
+                guard let id = post.id else { return }
+                listener = community.observeComments(postID: id) { comments = $0 }
+            }
+            .onDisappear { listener?.remove() }
         }
+    }
+
+    private var commentBar: some View {
+        HStack(spacing: 10) {
+            TextField("Add a comment…", text: $newComment, axis: .vertical)
+                .font(.system(size: 15))
+                .lineLimit(1...4)
+                .focused($inputFocused)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(Theme.softPink, in: Capsule())
+
+            Button {
+                send()
+            } label: {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 40, height: 40)
+                    .background(
+                        Circle().fill(canSend ? AnyShapeStyle(LinearGradient(colors: [Theme.pink, Theme.pinkDeep], startPoint: .top, endPoint: .bottom))
+                                               : AnyShapeStyle(Theme.textTertiary))
+                    )
+            }
+            .disabled(!canSend || sending)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial)
+    }
+
+    private var canSend: Bool {
+        !newComment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func send() {
+        guard let id = post.id, canSend else { return }
+        let text = newComment
+        sending = true
+        newComment = ""
+        community.addComment(postID: id, text: text, username: currentName, avatar: currentAvatar) { _ in
+            sending = false
+        }
+    }
+}
+
+struct CommentRow: View {
+    let comment: Comment
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            AvatarView(url: comment.avatar, size: 32)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(comment.username)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(comment.relativeTime)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.textTertiary)
+                }
+                Text(comment.text)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 4)
     }
 }
 

@@ -35,6 +35,27 @@ struct FeedPost: Identifiable, Codable, Hashable {
     }
 }
 
+/// A comment on a post (`posts/{id}/comments`).
+struct Comment: Identifiable, Codable, Hashable {
+    @DocumentID var id: String?
+    var username: String
+    var avatar: String
+    var text: String
+    var authorID: String = ""
+    @ServerTimestamp var createdAt: Timestamp?
+
+    var relativeTime: String {
+        guard let date = createdAt?.dateValue() else { return "now" }
+        let secs = Int(Date().timeIntervalSince(date))
+        switch secs {
+        case ..<60: return "now"
+        case ..<3600: return "\(secs / 60)m"
+        case ..<86400: return "\(secs / 3600)h"
+        default: return "\(secs / 86400)d"
+        }
+    }
+}
+
 /// A leaderboard entry mirrored from the `users` collection.
 struct LeaderRow: Identifiable, Codable, Hashable {
     @DocumentID var id: String?
@@ -127,6 +148,38 @@ final class CommunityService: ObservableObject {
         let row = LeaderRow(name: name, avatar: avatar, score: score, level: level, streak: streak)
         do { try db.collection("users").document(uid).setData(from: row, merge: true) }
         catch { print("syncProfile:", error.localizedDescription) }
+    }
+
+    // MARK: - Comments
+
+    /// Live-stream comments for a post; returns the listener so the caller can remove it.
+    func observeComments(postID: String, onChange: @escaping ([Comment]) -> Void) -> ListenerRegistration {
+        db.collection("posts").document(postID).collection("comments")
+            .order(by: "createdAt", descending: false)
+            .addSnapshotListener { snapshot, error in
+                if let error { print("comments listener:", error.localizedDescription); return }
+                onChange(snapshot?.documents.compactMap { try? $0.data(as: Comment.self) } ?? [])
+            }
+    }
+
+    func addComment(postID: String, text: String, username: String, avatar: String,
+                    completion: ((Error?) -> Void)? = nil) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { completion?(nil); return }
+        let uid = Auth.auth().currentUser?.uid ?? ""
+        let comment = Comment(username: username, avatar: avatar, text: trimmed, authorID: uid)
+        let postRef = db.collection("posts").document(postID)
+        do {
+            _ = try postRef.collection("comments").addDocument(from: comment) { error in
+                if error == nil {
+                    postRef.updateData(["commentCount": FieldValue.increment(Int64(1))])
+                }
+                DispatchQueue.main.async { completion?(error) }
+            }
+        } catch {
+            print("addComment:", error.localizedDescription)
+            completion?(error)
+        }
     }
 
     // MARK: - Moderation (report / block)

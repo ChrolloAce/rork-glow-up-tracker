@@ -26,7 +26,7 @@ struct HearAboutScreen: View {
                 }
                 .padding(.horizontal, 20).padding(.top, 6)
 
-                Display(lead: "How did ", emph: "you", tail: " hear\nabout Her75?", size: 32, align: .leading)
+                Display(lead: "How did ", emph: "you", tail: " hear\nabout 75 Glow?", size: 32, align: .leading)
                     .padding(.horizontal, 24).padding(.top, 28)
 
                 VStack(alignment: .leading, spacing: 22) {
