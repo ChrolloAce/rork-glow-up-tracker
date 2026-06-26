@@ -12,7 +12,7 @@ struct OnbChallenge: Identifiable, Equatable {
 }
 
 let sampleChallenges: [OnbChallenge] = [
-    OnbChallenge(name: "Her 75 OnbChallenge", joined: 17484, seed: 0, tasks: [
+    OnbChallenge(name: "Her 75 Challenge", joined: 17484, seed: 0, tasks: [
         "Eat clean (no junk food and no alcohol)",
         "Drink ONLY water 💧",
         "Walk 10,000 steps a day",
@@ -35,7 +35,7 @@ let sampleChallenges: [OnbChallenge] = [
         "Meditate 10 min", "Journal", "No social media before noon", "Gratitude list"]),
     OnbChallenge(name: "75 Hotter", joined: 601, seed: 8, tasks: [
         "Two workouts", "Strict diet", "Gallon of water", "Skincare", "Read 10 pages"]),
-    OnbChallenge(name: "30 Squat OnbChallenge", joined: 412, seed: 9, tasks: [
+    OnbChallenge(name: "30 Squat Challenge", joined: 412, seed: 9, tasks: [
         "Daily squat ladder", "Protein goal", "Water", "Stretch"]),
 ]
 
@@ -43,7 +43,8 @@ let sampleChallenges: [OnbChallenge] = [
 
 enum Step: Int, CaseIterable {
     case welcome1, globe, welcome2, welcome3, welcome4
-    case name, hearAbout, why, idealDay, biggestChallenge, findingChallenge
+    case name, hearAbout, why, idealDay, biggestChallenge
+    case weight, goal, weightLoss, height, diet, buildingPlan
     case selectChallenge, challengeDetail
     case startDate, length, saveProgress
     case sticker
@@ -62,6 +63,24 @@ enum Step: Int, CaseIterable {
     }
 }
 
+// MARK: - Goal
+
+enum Goal: String, CaseIterable, Identifiable {
+    case lose = "Lose weight"
+    case muscle = "Build muscle"
+    case tone = "Tone & sculpt"
+    case maintain = "Maintain & feel good"
+    var id: String { rawValue }
+    var icon: String {
+        switch self {
+        case .lose:     return "arrow.down.right.circle"
+        case .muscle:   return "figure.strengthtraining.traditional"
+        case .tone:     return "sparkles"
+        case .maintain: return "heart"
+        }
+    }
+}
+
 // MARK: - View model
 
 @MainActor
@@ -75,10 +94,23 @@ final class OnboardingVM: ObservableObject {
     @Published var why: Set<String> = []
     @Published var idealDay: String?
     @Published var biggest: Set<String> = []
+    @Published var goal: Goal?
+    @Published var weightLbs: Double = 150
+    @Published var heightInches: Double = 65
+    @Published var targetLossLbs: Double = 15
+    @Published var diet: String?
     @Published var selectedChallenge: OnbChallenge = sampleChallenges[0]
     @Published var startToday: Bool = true
     @Published var lengthDays: Int = 75
     @Published var plan: String = "Yearly"
+
+    /// Steps that only appear for certain answers (e.g. "how much to lose").
+    func isVisible(_ s: Step) -> Bool {
+        switch s {
+        case .weightLoss: return goal == .lose
+        default:          return true
+        }
+    }
 
     /// Called when the user finishes onboarding (after the paywall step).
     var onComplete: (() -> Void)?
@@ -96,6 +128,11 @@ final class OnboardingVM: ObservableObject {
         why = []
         idealDay = nil
         biggest = []
+        goal = nil
+        weightLbs = 150
+        heightInches = 65
+        targetLossLbs = 15
+        diet = nil
         selectedChallenge = sampleChallenges[0]
         startToday = true
         lengthDays = 75
@@ -103,18 +140,24 @@ final class OnboardingVM: ObservableObject {
     }
 
     func next() {
-        guard let i = Step.allCases.firstIndex(of: step), i + 1 < Step.allCases.count else { return }
+        guard let i = Step.allCases.firstIndex(of: step) else { return }
+        var n = i + 1
+        while n < Step.allCases.count && !isVisible(Step.allCases[n]) { n += 1 }
+        guard n < Step.allCases.count else { return }
         direction = .trailing
         withAnimation(.spring(response: 0.55, dampingFraction: 0.92)) {
-            step = Step.allCases[i + 1]
+            step = Step.allCases[n]
         }
     }
 
     func back() {
-        guard let i = Step.allCases.firstIndex(of: step), i > 0 else { return }
+        guard let i = Step.allCases.firstIndex(of: step) else { return }
+        var p = i - 1
+        while p >= 0 && !isVisible(Step.allCases[p]) { p -= 1 }
+        guard p >= 0 else { return }
         direction = .leading
         withAnimation(.spring(response: 0.55, dampingFraction: 0.92)) {
-            step = Step.allCases[i - 1]
+            step = Step.allCases[p]
         }
     }
 }
@@ -170,7 +213,12 @@ struct OnboardingFlow: View {
         case .why:              WhyScreen()
         case .idealDay:         IdealDayScreen()
         case .biggestChallenge: BiggestChallengeScreen()
-        case .findingChallenge: LoaderScreen(lead: "Finding your\n", emph: "perfect", tail: " challenge")
+        case .weight:           WeightScreen()
+        case .goal:             GoalScreen()
+        case .weightLoss:       WeightLossScreen()
+        case .height:           HeightScreen()
+        case .diet:             DietScreen()
+        case .buildingPlan:     BuildingPlanScreen()
         case .selectChallenge:  SelectChallengeScreen()
         case .challengeDetail:  ChallengeDetailScreen()
         case .startDate:        StartDateScreen()
