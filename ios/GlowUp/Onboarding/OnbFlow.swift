@@ -46,7 +46,7 @@ enum Step: Int, CaseIterable {
     case name, hearAbout, why, idealDay, biggestChallenge
     case weight, goal, weightLoss, height, diet, buildingPlan
     case selectChallenge, challengeDetail
-    case startDate, length, saveProgress
+    case length, saveProgress
     case sticker
     case personalizing, congrats, paywall
 
@@ -97,7 +97,7 @@ final class OnboardingVM: ObservableObject {
     @Published var goal: Goal?
     @Published var weightLbs: Double = 150
     @Published var heightInches: Double = 65
-    @Published var targetLossLbs: Double = 15
+    @Published var idealWeightLbs: Double = 0
     @Published var diet: String?
     @Published var selectedChallenge: OnbChallenge = sampleChallenges[0]
     @Published var startToday: Bool = true
@@ -131,7 +131,7 @@ final class OnboardingVM: ObservableObject {
         goal = nil
         weightLbs = 150
         heightInches = 65
-        targetLossLbs = 15
+        idealWeightLbs = 0
         diet = nil
         selectedChallenge = sampleChallenges[0]
         startToday = true
@@ -221,7 +221,6 @@ struct OnboardingFlow: View {
         case .buildingPlan:     BuildingPlanScreen()
         case .selectChallenge:  SelectChallengeScreen()
         case .challengeDetail:  ChallengeDetailScreen()
-        case .startDate:        StartDateScreen()
         case .length:           LengthScreen()
         case .saveProgress:     SaveProgressScreen()
         case .sticker:          StickerScreen()

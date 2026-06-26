@@ -1,67 +1,26 @@
 import SwiftUI
 import AuthenticationServices
 
-// 16 — When do you start?
-struct StartDateScreen: View {
-    @EnvironmentObject var vm: OnboardingVM
-    var body: some View {
-        Scaffold(progress: Step.startDate.progress, onBack: vm.back) {
-            VStack(spacing: 26) {
-                Display(lead: "When\ndo ", emph: "you", tail: " start?", size: 32)
-                Picker("", selection: $vm.startToday) {
-                    Text("Today").tag(true)
-                    Text("Pick a date").tag(false)
-                }
-                .pickerStyle(.segmented)
-                Ruler()
-                Text(vm.startToday ? "Sat, Jun 20" : "Mon, Jun 22")
-                    .font(.serif(20)).foregroundStyle(AppColor.ink)
-                CollageGrid(count: 3, seed: 3).frame(height: 120).clipped()
-            }
-        } footer: {
-            PrimaryButton(title: "Continue") { vm.next() }
-        }
-    }
-}
-
 // 17 — Set challenge length
 struct LengthScreen: View {
     @EnvironmentObject var vm: OnboardingVM
-    var endDate: String {
-        switch vm.lengthDays {
-        case ..<40: return "Sun, Aug 3"
-        case 40..<70: return "Tue, Aug 26"
-        default: return "Wed, Sep 2"
-        }
-    }
     var body: some View {
         Scaffold(progress: Step.length.progress, onBack: vm.back) {
             VStack(spacing: 24) {
+                Spacer(minLength: 20)
                 Display(lead: "Set challenge\n", emph: "length?", size: 32)
-                Text("\(vm.lengthDays) days").font(.serif(40)).foregroundStyle(AppColor.ink)
-                Slider(value: Binding(
+                Text("\(vm.lengthDays) days").font(.serif(48, .bold)).foregroundStyle(AppColor.ink)
+                    .contentTransition(.numericText())
+                TickSlider(value: Binding(
                     get: { Double(vm.lengthDays) },
-                    set: { vm.lengthDays = Int($0) }), in: 7...90, step: 1)
-                    .tint(AppColor.ink)
-                Text("Fri, Jun 19  →  \(endDate)")
-                    .font(.sans(14)).foregroundStyle(AppColor.inkSoft)
-                CollageGrid(count: 3, seed: 6).frame(height: 120).clipped()
+                    set: { vm.lengthDays = Int($0) }), range: 7...90)
+                    .padding(.horizontal, 8)
+                Text("Slide to set how many days")
+                    .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
             }
         } footer: {
             PrimaryButton(title: "Continue") { vm.next() }
         }
-    }
-}
-
-struct Ruler: View {
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<30, id: \.self) { i in
-                Rectangle().fill(i == 15 ? AppColor.ink : AppColor.line)
-                    .frame(width: i == 15 ? 2 : 1, height: i % 5 == 0 ? 22 : 14)
-            }
-        }
-        .frame(height: 26)
     }
 }
 
@@ -77,7 +36,7 @@ struct SaveProgressScreen: View {
                 Display(lead: "Save your\n", emph: "progress", size: 32)
                 Text("Create an account so your streak is never lost.")
                     .font(.sans(14)).foregroundStyle(AppColor.inkSoft).multilineTextAlignment(.center)
-                CollageGrid(count: 3, seed: 2).frame(height: 110).clipped()
+                ProgressMarquee().padding(.top, 6)
             }
         } footer: {
             SignInWithAppleButton(.continue) { request in
@@ -104,6 +63,61 @@ struct SaveProgressScreen: View {
             Button("Maybe later") { vm.next() }
                 .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
         }
+    }
+}
+
+// MARK: - Day 1 → Day 75 sliding image marquee
+
+struct ProgressMarquee: View {
+    private let images = Collage.glow + Collage.fit
+    private let itemW: CGFloat = 84
+    private let spacing: CGFloat = 10
+    @State private var shift: CGFloat = 0
+
+    var body: some View {
+        let loopWidth = CGFloat(images.count) * (itemW + spacing)
+        VStack(spacing: 10) {
+            ZStack {
+                HStack(spacing: spacing) {
+                    ForEach(Array((images + images).enumerated()), id: \.offset) { _, name in
+                        Image(name).resizable().scaledToFill()
+                            .frame(width: itemW, height: 104)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(.white, lineWidth: 2))
+                    }
+                }
+                .offset(x: shift)
+            }
+            .frame(height: 104)
+            .clipped()
+            .mask(
+                LinearGradient(colors: [.clear, .black, .black, .black, .clear],
+                               startPoint: .leading, endPoint: .trailing)
+            )
+            .overlay(alignment: .leading) { dayTag("Day 1") }
+            .overlay(alignment: .trailing) { dayTag("Day 75") }
+
+            HStack(spacing: 6) {
+                Text("Day 1").font(.sans(11, .semibold)).foregroundStyle(AppColor.inkSoft)
+                Rectangle().fill(AppColor.line).frame(height: 1)
+                Text("Day 75").font(.sans(11, .semibold)).foregroundStyle(AppColor.inkSoft)
+            }
+            .padding(.horizontal, 4)
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 16).repeatForever(autoreverses: false)) {
+                shift = -loopWidth
+            }
+        }
+    }
+
+    private func dayTag(_ t: String) -> some View {
+        Text(t)
+            .font(.sans(10, .bold)).foregroundStyle(AppColor.ink)
+            .padding(.horizontal, 9).padding(.vertical, 4)
+            .background(.white, in: Capsule())
+            .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
+            .padding(8)
     }
 }
 

@@ -16,7 +16,6 @@ struct WeightScreen: View {
                     .padding(.horizontal, 8)
                 Text("Slide to set your current weight")
                     .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
-                CollageGrid(count: 3, seed: 7).frame(height: 100).clipped()
             }
         } footer: {
             PrimaryButton(title: "Continue") { vm.next() }
@@ -46,26 +45,40 @@ struct GoalScreen: View {
     }
 }
 
-// MARK: - How much to lose (only when goal is "lose weight")
+// MARK: - Ideal weight (only when goal is "lose weight") — references current weight
 
 struct WeightLossScreen: View {
     @EnvironmentObject var vm: OnboardingVM
+
+    private var diffText: String {
+        let diff = vm.weightLbs - vm.idealWeightLbs
+        if diff > 0.5 { return "\(Int(diff.rounded())) lb to lose" }
+        if diff < -0.5 { return "\(Int((-diff).rounded())) lb to gain" }
+        return "Right where you want to be 💛"
+    }
+
     var body: some View {
         Scaffold(progress: Step.weightLoss.progress, onBack: vm.back) {
             VStack(spacing: 26) {
-                Spacer(minLength: 10)
-                Display(lead: "How much do you\nwant to ", emph: "lose?", size: 30)
-                Text("\(Int(vm.targetLossLbs)) lb")
+                Spacer(minLength: 20)
+                Display(lead: "What's your\n", emph: "ideal weight?", size: 30)
+                Text("\(Int(vm.idealWeightLbs)) lb")
                     .font(.serif(56, .bold)).foregroundStyle(AppColor.ink)
                     .contentTransition(.numericText())
-                TickSlider(value: $vm.targetLossLbs, range: 3...80)
-                    .padding(.horizontal, 8)
-                Text("A healthy, realistic goal works best 💛")
+                Text(diffText)
+                    .font(.sans(14, .semibold)).foregroundStyle(AppColor.ink)
+                    .padding(.horizontal, 14).padding(.vertical, 7)
+                    .background(AppColor.chipGreen, in: Capsule())
+                TickSlider(value: $vm.idealWeightLbs, range: 80...350, marker: vm.weightLbs, markerLabel: "Now")
+                    .padding(.horizontal, 8).padding(.top, 8)
+                Text("Your current weight is marked above")
                     .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
             }
         } footer: {
             PrimaryButton(title: "Continue") { vm.next() }
         }
+        // Start the slider at the user's current weight the first time.
+        .onAppear { if vm.idealWeightLbs == 0 { vm.idealWeightLbs = vm.weightLbs } }
     }
 }
 
@@ -88,7 +101,6 @@ struct HeightScreen: View {
                     .padding(.horizontal, 8)
                 Text("Slide to set your height")
                     .font(.sans(13)).foregroundStyle(AppColor.inkSoft)
-                CollageGrid(count: 3, seed: 5).frame(height: 100).clipped()
             }
         } footer: {
             PrimaryButton(title: "Continue") { vm.next() }
@@ -203,6 +215,9 @@ struct TickSlider: View {
     @Binding var value: Double
     var range: ClosedRange<Double>
     var step: Double = 1
+    /// Optional reference marker (e.g. the user's current weight).
+    var marker: Double? = nil
+    var markerLabel: String = "Now"
     private let tickCount = 41
     @State private var lastStep: Double = .nan
 
@@ -222,6 +237,17 @@ struct TickSlider: View {
                     }
                 }
                 .frame(height: 24)
+                // reference marker (current weight)
+                if let m = marker {
+                    let mf = min(max((m - range.lowerBound) / span, 0), 1)
+                    VStack(spacing: 2) {
+                        Text(markerLabel)
+                            .font(.sans(9, .bold)).foregroundStyle(AppColor.inkSoft)
+                        Capsule().fill(AppColor.inkSoft.opacity(0.6)).frame(width: 2, height: 26)
+                    }
+                    .fixedSize()
+                    .offset(x: CGFloat(mf) * w - 12, y: -14)
+                }
                 // current position indicator
                 Capsule()
                     .fill(AppColor.ink)
