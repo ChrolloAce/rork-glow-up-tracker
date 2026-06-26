@@ -17,6 +17,7 @@ struct ProfileView: View {
     @State private var showDeleteConfirm: Bool = false
     @State private var isDeleting: Bool = false
     @EnvironmentObject private var auth: AuthService
+    @Environment(\.openURL) private var openURL
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding: Bool = true
     @State private var remindMorning: Bool = true
     @State private var remindEvening: Bool = true
@@ -553,9 +554,18 @@ struct ProfileView: View {
             }
             .sensoryFeedback(.selection, trigger: showAvatarPicker)
 
-            SettingsRow(icon: "lock.shield.fill", label: "Privacy")
-            SettingsRow(icon: "questionmark.circle.fill", label: "Help")
-            SettingsRow(icon: "info.circle.fill", label: "About")
+            SettingsRow(icon: "lock.shield.fill", label: "Privacy Policy") {
+                openURL(URL(string: "https://75glowapp.vercel.app/privacy.html")!)
+            }
+            SettingsRow(icon: "doc.text.fill", label: "Terms of Service") {
+                openURL(URL(string: "https://75glowapp.vercel.app/terms.html")!)
+            }
+            SettingsRow(icon: "questionmark.circle.fill", label: "Help & Support") {
+                openURL(URL(string: "mailto:collabs@prayerlock.com?subject=Glow%20Up%20Support")!)
+            }
+            SettingsRow(icon: "info.circle.fill", label: "About") {
+                openURL(URL(string: "https://75glowapp.vercel.app")!)
+            }
         }
         .glassCard()
     }
@@ -590,9 +600,10 @@ struct GoalRow: View {
 struct SettingsRow: View {
     let icon: String
     let label: String
+    var action: () -> Void = {}
 
     var body: some View {
-        Button { } label: {
+        Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
@@ -607,5 +618,6 @@ struct SettingsRow: View {
             }
             .padding(18)
         }
+        .buttonStyle(.plain)
     }
 }
