@@ -102,7 +102,10 @@ struct CommunityView: View {
                     body: body,
                     streak: viewModel.currentDay,
                     level: 7
-                )
+                ) { error in
+                    flashToast(error == nil ? "Posted to the community 🎉"
+                                            : "Couldn't post: \(error!.localizedDescription)")
+                }
             }
             .presentationDetents([.medium, .large])
             .adaptivePresentationBackground()

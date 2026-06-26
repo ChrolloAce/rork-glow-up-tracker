@@ -87,14 +87,22 @@ final class CommunityService: ObservableObject {
         }
     }
 
-    func createPost(username: String, avatar: String, title: String, body: String, streak: Int, level: Int) {
+    func createPost(username: String, avatar: String, title: String, body: String,
+                    streak: Int, level: Int, completion: ((Error?) -> Void)? = nil) {
         let uid = Auth.auth().currentUser?.uid ?? ""
         let post = FeedPost(
             username: username, avatar: avatar, title: title, body: body,
             streak: streak, level: level, authorID: uid
         )
-        do { _ = try db.collection("posts").addDocument(from: post) }
-        catch { print("createPost:", error.localizedDescription) }
+        do {
+            _ = try db.collection("posts").addDocument(from: post) { error in
+                if let error { print("createPost:", error.localizedDescription) }
+                DispatchQueue.main.async { completion?(error) }
+            }
+        } catch {
+            print("createPost encode:", error.localizedDescription)
+            completion?(error)
+        }
     }
 
     func toggleLike(_ post: FeedPost) {
