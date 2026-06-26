@@ -281,27 +281,32 @@ struct ChallengeHabitCard: View {
     }
 
     private var routineFeature: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             ForEach(habit.subTasks, id: \.self) { step in
                 let done = state.doneSubtasks.contains(step)
-                Button { viewModel.toggleSubtask(habit, step) } label: {
+                Button {
+                    let gen = UIImpactFeedbackGenerator(style: .light); gen.impactOccurred()
+                    viewModel.toggleSubtask(habit, step)
+                } label: {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
-                                .stroke(done ? Color.clear : accent.opacity(0.4), lineWidth: 1.5)
+                                .stroke(done ? Color.clear : accent.opacity(0.45), lineWidth: 2)
                                 .background(Circle().fill(done ? accent : Color.clear))
-                                .frame(width: 24, height: 24)
+                                .frame(width: 26, height: 26)
                             if done {
-                                Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                                Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
                             }
                         }
                         Text(step)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(done ? Theme.textTertiary : Theme.textPrimary)
                             .strikethrough(done, color: Theme.textTertiary)
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
-                    .padding(.vertical, 3)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 8)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }

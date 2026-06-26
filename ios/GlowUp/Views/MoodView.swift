@@ -8,9 +8,15 @@ struct MoodView: View {
     @State private var showEditQuote = false
     @State private var showEditReasons = false
     @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var showAddDialog = false
+    @State private var showGalleryPicker = false
+    @State private var showCurated = false
+    @State private var stickerTarget: ProgressPhoto?
 
     private let ink = Theme.ink
     private let pink = Theme.glowBlue
+    /// Default cute stickers when the user hasn't chosen one for a tile.
+    private let defaultStickers = ["sparkles", "heart.fill", "leaf.fill", "star.fill", "sun.max.fill", "moon.stars.fill"]
 
     var body: some View {
         ScrollView {
@@ -31,6 +37,20 @@ struct MoodView: View {
         }
         .sheet(isPresented: $showEditReasons) {
             MoodEditSheet(viewModel: viewModel, mode: .reasons) { showEditReasons = false }
+        }
+        .confirmationDialog("Add to your glow board", isPresented: $showAddDialog, titleVisibility: .visible) {
+            Button("Your gallery") { showGalleryPicker = true }
+            Button("75 Glow vibes") { showCurated = true }
+        }
+        .photosPicker(isPresented: $showGalleryPicker, selection: $pickerItems, maxSelectionCount: 12, matching: .images)
+        .sheet(isPresented: $showCurated) {
+            CuratedGlowSheet(viewModel: viewModel) { showCurated = false }
+        }
+        .sheet(item: $stickerTarget) { photo in
+            StickerPickerSheet(current: viewModel.glowBoardStickers[photo.id]) { symbol in
+                viewModel.setGlowSticker(photo.id, symbol)
+                stickerTarget = nil
+            }
         }
         .onChange(of: pickerItems) { _, items in loadImages(items) }
     }
@@ -112,13 +132,14 @@ struct MoodView: View {
             HStack {
                 Text("My Glow Board").font(.system(size: 17, weight: .bold)).foregroundStyle(ink)
                 Spacer()
-                PhotosPicker(selection: $pickerItems, maxSelectionCount: 12, matching: .images) {
+                Button { showAddDialog = true } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus").font(.system(size: 11, weight: .bold))
                         Text("Add").font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundStyle(pink)
                 }
+                .buttonStyle(.plain)
             }
 
             if viewModel.glowBoardPhotos.isEmpty {
@@ -129,9 +150,6 @@ struct MoodView: View {
         }
     }
 
-    /// Cute, generic stickers (no false claims about content).
-    private let stickerSet = ["sparkles", "heart.fill", "leaf.fill", "star.fill", "sun.max.fill", "moon.stars.fill"]
-
     private var boardGrid: some View {
         let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
         return LazyVGrid(columns: columns, spacing: 10) {
@@ -139,6 +157,14 @@ struct MoodView: View {
                 boardTile(photo, index: index)
             }
         }
+    }
+
+    /// The sticker shown on a tile (user choice, or a default), or nil if removed.
+    private func tileSticker(_ photo: ProgressPhoto, _ index: Int) -> String? {
+        if let chosen = viewModel.glowBoardStickers[photo.id] {
+            return chosen == "none" ? nil : chosen
+        }
+        return defaultStickers[index % defaultStickers.count]
     }
 
     private func boardTile(_ photo: ProgressPhoto, index: Int) -> some View {
@@ -164,21 +190,26 @@ struct MoodView: View {
             .padding(6)
         }
         .overlay(alignment: .bottomLeading) {
-            sticker(stickerSet[index % stickerSet.count], rotation: index % 2 == 0 ? -12 : 10)
-                .offset(x: -8, y: 8)
-        }
-        .overlay(alignment: .bottomTrailing) {
-            // a second, smaller accent sticker on some tiles for a fuller collage feel
-            if index % 2 == 1 {
-                sticker(stickerSet[(index + 3) % stickerSet.count], rotation: index % 3 == 0 ? 14 : -8)
-                    .scaleEffect(0.78)
-                    .offset(x: 8, y: 8)
+            Button { stickerTarget = photo } label: {
+                if let symbol = tileSticker(photo, index) {
+                    sticker(symbol, rotation: index % 2 == 0 ? -12 : 10)
+                } else {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(pink)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(.white))
+                        .overlay(Circle().stroke(pink.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+                        .shadow(color: pink.opacity(0.25), radius: 4, y: 1)
+                }
             }
+            .buttonStyle(.plain)
+            .offset(x: -8, y: 8)
         }
     }
 
     private var boardEmptyState: some View {
-        PhotosPicker(selection: $pickerItems, maxSelectionCount: 12, matching: .images) {
+        Button { showAddDialog = true } label: {
             VStack(spacing: 10) {
                 Image(systemName: "photo.on.rectangle.angled")
                     .font(.system(size: 34, weight: .light)).foregroundStyle(pink.opacity(0.6))
@@ -466,5 +497,113 @@ struct MoodEditSheet: View {
             viewModel.userReasons = reasons
         }
         onDone()
+    }
+}
+
+// MARK: - Sticker picker (pops up when you tap a tile's sticker)
+
+struct StickerPickerSheet: View {
+    let current: String?
+    var onPick: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private let options = [
+        "sparkles", "heart.fill", "cup.and.saucer.fill", "leaf.fill",
+        "star.fill", "sun.max.fill", "moon.stars.fill", "flame.fill",
+        "cloud.fill", "drop.fill", "camera.macro", "music.note"
+    ]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 18) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 14) {
+                        ForEach(options, id: \.self) { sym in
+                            Button { onPick(sym) } label: {
+                                Image(systemName: sym)
+                                    .font(.system(size: 22))
+                                    .foregroundStyle(Theme.glowBlue)
+                                    .frame(width: 60, height: 60)
+                                    .background(Circle().fill(Theme.glowBlue.opacity(0.1)))
+                                    .overlay(Circle().stroke(current == sym ? Theme.glowBlue : .clear, lineWidth: 2))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    Button { onPick("none") } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "xmark.circle")
+                            Text("Remove sticker")
+                        }
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(maxWidth: .infinity).frame(height: 48)
+                        .background(Capsule().fill(Theme.softPink))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(20)
+            }
+            .background(Color.white.ignoresSafeArea())
+            .navigationTitle("Pick a sticker")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Curated "75 Glow" image picker (app-provided aesthetic images)
+
+struct CuratedGlowSheet: View {
+    @Bindable var viewModel: GlowViewModel
+    var onDone: () -> Void
+    @State private var addedCount = 0
+
+    /// All glowN images that exist in the asset catalog (add more anytime).
+    private var names: [String] { (1...40).map { "glow\($0)" }.filter { UIImage(named: $0) != nil } }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                if names.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "sparkles").font(.system(size: 40)).foregroundStyle(Theme.glowBlue.opacity(0.5))
+                        Text("Glow images coming soon").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.textPrimary)
+                        Text("Curated 75 Glow images will appear here.").font(.system(size: 13)).foregroundStyle(Theme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity).padding(.top, 60)
+                } else {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                        ForEach(names, id: \.self) { name in
+                            Button {
+                                if let img = UIImage(named: name) {
+                                    viewModel.addGlowImage(img)
+                                    addedCount += 1
+                                }
+                            } label: {
+                                Image(name)
+                                    .resizable().aspectRatio(contentMode: .fill)
+                                    .frame(height: 150).frame(maxWidth: .infinity)
+                                    .clipShape(.rect(cornerRadius: 16))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 40)
+                }
+            }
+            .background(Color.white.ignoresSafeArea())
+            .scrollIndicators(.hidden)
+            .navigationTitle("75 Glow vibes")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(addedCount > 0 ? "Done · \(addedCount)" : "Done") { onDone() }
+                }
+            }
+        }
     }
 }

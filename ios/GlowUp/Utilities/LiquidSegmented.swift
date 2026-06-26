@@ -8,9 +8,48 @@ struct LiquidSegmented: View {
     @State private var hapticTrigger: Int = 0
 
     var body: some View {
-        fallback
-            .sensoryFeedback(.selection, trigger: hapticTrigger)
+        Group {
+            #if compiler(>=6.2)
+            if #available(iOS 26.0, *) {
+                modern
+            } else {
+                fallback
+            }
+            #else
+            fallback
+            #endif
+        }
+        .sensoryFeedback(.selection, trigger: hapticTrigger)
     }
+
+    #if compiler(>=6.2)
+    @available(iOS 26.0, *)
+    private var modern: some View {
+        GlassEffectContainer(spacing: 10) {
+            HStack(spacing: 6) {
+                ForEach(0..<options.count, id: \.self) { index in
+                    let isActive = selected == index
+                    Button {
+                        withAnimation(.bouncy(duration: 0.4)) { selected = index }
+                        hapticTrigger += 1
+                    } label: {
+                        Text(options[index])
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(isActive ? .white : Theme.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(
+                        isActive ? .regular.tint(tint).interactive() : .regular.interactive(),
+                        in: .capsule
+                    )
+                    .glassEffectID("seg-\(index)", in: ns)
+                }
+            }
+        }
+    }
+    #endif
 
     private var fallback: some View {
         ZStack(alignment: .leading) {

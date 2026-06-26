@@ -112,8 +112,37 @@ extension View {
         modifier(GlassCard(radius: radius, tinted: tinted, accent: accent))
     }
 
+    /// Native Apple Liquid Glass on iOS 26 (Xcode 26+); a frosted-material
+    /// fallback when built with an older SDK. The `#if compiler` guard lets the
+    /// real `.glassEffect` API compile only where it exists.
     @ViewBuilder
     func adaptiveGlass(in shape: some Shape = .capsule) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.interactive(), in: shape)
+        } else {
+            self.materialGlass(in: shape)
+        }
+        #else
+        self.materialGlass(in: shape)
+        #endif
+    }
+
+    @ViewBuilder
+    func adaptiveGlassTinted(_ color: Color, in shape: some Shape = .capsule) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.tint(color).interactive(), in: shape)
+        } else {
+            self.materialGlassTinted(color, in: shape)
+        }
+        #else
+        self.materialGlassTinted(color, in: shape)
+        #endif
+    }
+
+    @ViewBuilder
+    func materialGlass(in shape: some Shape = .capsule) -> some View {
         self
             .background {
                 ZStack {
@@ -122,13 +151,11 @@ extension View {
                 }
             }
             .clipShape(shape)
-            .overlay(
-                shape.stroke(Theme.pink.opacity(0.3), lineWidth: 1)
-            )
+            .overlay(shape.stroke(Theme.glowBlue.opacity(0.3), lineWidth: 1))
     }
 
     @ViewBuilder
-    func adaptiveGlassTinted(_ color: Color, in shape: some Shape = .capsule) -> some View {
+    func materialGlassTinted(_ color: Color, in shape: some Shape = .capsule) -> some View {
         self
             .background {
                 ZStack {
@@ -137,9 +164,7 @@ extension View {
                 }
             }
             .clipShape(shape)
-            .overlay(
-                shape.stroke(color.opacity(0.55), lineWidth: 1)
-            )
+            .overlay(shape.stroke(color.opacity(0.55), lineWidth: 1))
     }
 
     @ViewBuilder

@@ -33,6 +33,7 @@ class GlowViewModel {
         defaults.set(userName, forKey: "userName")
         defaults.set(userQuote, forKey: "userQuote")
         if let d = try? JSONEncoder().encode(userReasons) { defaults.set(d, forKey: "userReasons") }
+        if let d = try? JSONEncoder().encode(glowBoardStickers) { defaults.set(d, forKey: "glowBoardStickers") }
         defaults.set(hasCompletedMoodSetup, forKey: "hasCompletedMoodSetup")
         defaults.set(avatarURL, forKey: "selectedAvatarID")
         defaults.set(hasSelectedAvatar, forKey: "hasSelectedAvatar")
@@ -338,6 +339,7 @@ class GlowViewModel {
         if let v = defaults.string(forKey: "userName") { userName = v }
         if let v = defaults.string(forKey: "userQuote") { userQuote = v }
         if let v: [String] = loadJSON([String].self, key: "userReasons"), v.count == 5 { userReasons = v }
+        if let v: [String: String] = loadJSON([String: String].self, key: "glowBoardStickers") { glowBoardStickers = v }
         if let v: [Habit] = loadJSON([Habit].self, key: "habits") { habits = v }
         if defaults.object(forKey: "waterOz") != nil { waterOz = defaults.double(forKey: "waterOz") }
         if defaults.object(forKey: "stepCount") != nil { stepCount = defaults.integer(forKey: "stepCount") }
@@ -402,6 +404,14 @@ class GlowViewModel {
 
     // MARK: - Glow Board (mood / vision board images)
     var glowBoardPhotos: [ProgressPhoto] = []
+
+    /// Per-photo sticker choice on the glow board. Value "none" means removed.
+    var glowBoardStickers: [String: String] = [:] {
+        didSet { saveJSON(glowBoardStickers, key: "glowBoardStickers") }
+    }
+    func setGlowSticker(_ photoID: String, _ symbol: String) {
+        glowBoardStickers[photoID] = symbol
+    }
 
     private var glowBoardDirectory: URL {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("GlowBoard", isDirectory: true)

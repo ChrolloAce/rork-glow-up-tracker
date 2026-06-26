@@ -252,7 +252,7 @@ struct HomeView: View {
                 .padding(.top, 18)
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 110)
+        .padding(.bottom, 40)
         .frame(maxWidth: .infinity, alignment: .top)
         .background(
             UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30)
