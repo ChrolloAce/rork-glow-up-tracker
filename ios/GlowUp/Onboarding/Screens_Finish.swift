@@ -1,33 +1,6 @@
 import SwiftUI
 import SuperwallKit
 
-// 27 — Congrats
-struct CongratsScreen: View {
-    @EnvironmentObject var vm: OnboardingVM
-    var body: some View {
-        Scaffold(showBack: false, progress: nil) {
-            VStack(spacing: 22) {
-                Display(lead: "Congrats.\nYou're ready to ", emph: "start", tail: "\nyour challenge", size: 28)
-                PhoneMock {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("day one").font(.serif(20))
-                        Text("Day 19 • Step 1").font(.sans(11)).foregroundStyle(AppColor.inkSoft)
-                        ForEach(Array(vm.selectedChallenge.tasks.prefix(3).enumerated()), id: \.offset) { i, t in
-                            HStack(spacing: 10) {
-                                Image(systemName: "circle").foregroundStyle(AppColor.inkSoft)
-                                Text(t).font(.sans(13)).lineLimit(1)
-                            }
-                        }
-                    }.padding(20)
-                }
-            }
-        } footer: {
-            PrimaryButton(title: "Start now") { vm.next() }
-        }
-        .onAppear { Haptics.success() }
-    }
-}
-
 // 28 — Paywall
 //
 // The Superwall paywall (placement "campaign_trigger") is the primary, real

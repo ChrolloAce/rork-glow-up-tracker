@@ -47,13 +47,13 @@ enum Step: Int, CaseIterable {
     case weight, goal, weightLoss, height, diet, buildingPlan
     case selectChallenge, challengeDetail
     case saveProgress
-    case dayGrid, congrats, paywall
+    case dayGrid, paywall
 
     /// Progress only shown during the "work" portion of the flow.
     var progress: Double? {
         switch self {
         case .welcome1, .globe, .welcome3, .welcome4: return nil
-        case .dayGrid, .congrats, .paywall: return nil
+        case .dayGrid, .paywall: return nil
         default:
             let working = Step.allCases.filter { $0.rawValue >= Step.name.rawValue && $0.rawValue <= Step.saveProgress.rawValue }
             guard let idx = working.firstIndex(of: self) else { return nil }
@@ -221,7 +221,6 @@ struct OnboardingFlow: View {
         case .challengeDetail:  ChallengeDetailScreen()
         case .saveProgress:     SaveProgressScreen()
         case .dayGrid:          DayGridReveal()
-        case .congrats:         CongratsScreen()
         case .paywall:          PaywallScreen()
         }
     }
