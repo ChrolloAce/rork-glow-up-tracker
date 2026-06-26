@@ -3,7 +3,6 @@ import SwiftUI
 struct ProfileView: View {
     @Bindable var viewModel: GlowViewModel
     @State private var selectedSkinType: String = "Combination"
-    @State private var connectHealth: Bool = false
     @State private var showAvatarPicker: Bool = false
     @State private var showChallengePicker: Bool = false
     @State private var showChallengeDetail: Bool = false
@@ -458,21 +457,6 @@ struct ProfileView: View {
             Text("Connections")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
-
-            HStack {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Theme.glowBlue)
-                Text("Apple Health")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Theme.textPrimary)
-                Spacer()
-                Toggle("", isOn: $connectHealth)
-                    .tint(Theme.glowBlue)
-                    .labelsHidden()
-            }
-
-            Divider().opacity(0.4)
 
             HStack {
                 Image(systemName: "calendar")

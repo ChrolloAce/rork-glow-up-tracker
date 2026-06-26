@@ -22,6 +22,14 @@ struct CommunityView: View {
     @State private var showLeaderboard: Bool = false
     @State private var showNotes: Bool = false
     @State private var showComposer: Bool = false
+    @State private var actionPost: FeedPost?
+    @State private var showReportDialog: Bool = false
+    @State private var showBlockConfirm: Bool = false
+    @State private var detailPost: FeedPost?
+    @State private var toast: String?
+
+    static let reportReasons = ["Spam", "Harassment or bullying",
+                                "Inappropriate content", "Something else"]
 
     enum CommunityFilter: String, CaseIterable, Identifiable {
         case sameChallenge = "Same Challenge"
@@ -103,6 +111,47 @@ struct CommunityView: View {
             NotesSheet()
                 .presentationDetents([.medium, .large])
                 .adaptivePresentationBackground()
+        }
+        .sheet(item: $detailPost) { post in
+            PostDetailSheet(post: post, community: community)
+        }
+        .confirmationDialog("Report this post", isPresented: $showReportDialog, titleVisibility: .visible, presenting: actionPost) { post in
+            ForEach(Self.reportReasons, id: \.self) { reason in
+                Button(reason, role: .destructive) {
+                    community.report(post, reason: reason)
+                    flashToast("Thanks — our team will review this.")
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("Why are you reporting this? We review reports within 24 hours.")
+        }
+        .confirmationDialog("Block \(actionPost?.username ?? "this user")?", isPresented: $showBlockConfirm, titleVisibility: .visible, presenting: actionPost) { post in
+            Button("Block", role: .destructive) {
+                community.block(post)
+                flashToast("Blocked. You won't see their posts.")
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("You won't see posts from this person anymore.")
+        }
+        .overlay(alignment: .top) {
+            if let toast {
+                Text(toast)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(Capsule().fill(Theme.textPrimary))
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+    }
+
+    private func flashToast(_ message: String) {
+        withAnimation(.spring) { toast = message }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            withAnimation(.easeOut) { toast = nil }
         }
     }
 
@@ -206,7 +255,13 @@ struct CommunityView: View {
                     emptyFeed
                 } else {
                     ForEach(community.posts) { post in
-                        PostCard(post: post) { community.toggleLike(post) }
+                        PostCard(
+                            post: post,
+                            onLike: { community.toggleLike(post) },
+                            onOpen: { detailPost = post },
+                            onReport: { actionPost = post; showReportDialog = true },
+                            onBlock: { actionPost = post; showBlockConfirm = true }
+                        )
                     }
                 }
             }
@@ -241,6 +296,9 @@ struct CommunityView: View {
 struct PostCard: View {
     let post: FeedPost
     var onLike: () -> Void
+    var onOpen: () -> Void = {}
+    var onReport: () -> Void = {}
+    var onBlock: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -266,7 +324,9 @@ struct PostCard: View {
                 Menu {
                     Button("Save", systemImage: "bookmark") {}
                     Button("Share", systemImage: "square.and.arrow.up") {}
-                    Button("Report", systemImage: "exclamationmark.triangle", role: .destructive) {}
+                    Divider()
+                    Button("Report", systemImage: "flag", role: .destructive) { onReport() }
+                    Button("Block \(post.username)", systemImage: "hand.raised", role: .destructive) { onBlock() }
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 16, weight: .semibold))
@@ -289,6 +349,8 @@ struct PostCard: View {
                         .multilineTextAlignment(.leading)
                 }
             }
+            .contentShape(Rectangle())
+            .onTapGesture { onOpen() }
 
             HStack(spacing: 20) {
                 Button {
@@ -323,6 +385,95 @@ struct PostCard: View {
         }
         .padding(16)
         .glassCard(radius: 22)
+    }
+}
+
+// MARK: - Post detail (opening someone's post) with report / block
+
+struct PostDetailSheet: View {
+    let post: FeedPost
+    @ObservedObject var community: CommunityService
+    @Environment(\.dismiss) private var dismiss
+    @State private var showReport = false
+    @State private var showBlock = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 12) {
+                        AvatarView(url: post.avatar, size: 48)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(post.username)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(Theme.textPrimary)
+                            Text("\(post.streak) day streak · \(post.relativeTime)")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Theme.textTertiary)
+                        }
+                        Spacer()
+                    }
+
+                    Text(post.title)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Theme.textPrimary)
+
+                    if !post.body.isEmpty {
+                        Text(post.body)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+
+                    HStack(spacing: 6) {
+                        Image(systemName: post.isLikedByMe ? "heart.fill" : "heart")
+                            .foregroundStyle(post.isLikedByMe ? Theme.pink : Theme.textTertiary)
+                        Text("\(post.likeCount) likes")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .padding(.top, 4)
+
+                    Spacer(minLength: 0)
+                }
+                .padding(20)
+            }
+            .background(Theme.screenGradient.ignoresSafeArea())
+            .navigationTitle("Post")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") { dismiss() }.foregroundStyle(Theme.textSecondary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("Report", systemImage: "flag", role: .destructive) { showReport = true }
+                        Button("Block \(post.username)", systemImage: "hand.raised", role: .destructive) { showBlock = true }
+                    } label: {
+                        Image(systemName: "ellipsis.circle").foregroundStyle(Theme.pink)
+                    }
+                }
+            }
+            .confirmationDialog("Report this post", isPresented: $showReport, titleVisibility: .visible) {
+                ForEach(CommunityView.reportReasons, id: \.self) { reason in
+                    Button(reason, role: .destructive) {
+                        community.report(post, reason: reason)
+                        dismiss()
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("We review reports within 24 hours.")
+            }
+            .confirmationDialog("Block \(post.username)?", isPresented: $showBlock, titleVisibility: .visible) {
+                Button("Block", role: .destructive) {
+                    community.block(post)
+                    dismiss()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You won't see posts from this person anymore.")
+            }
+        }
     }
 }
 

@@ -63,12 +63,12 @@ struct PaywallScreen: View {
                 presentPaywall()
             }
             HStack(spacing: 18) {
-                Button("Privacy policy") {}
+                Link("Privacy policy", destination: URL(string: "https://75glowapp.vercel.app/privacy.html")!)
                 Button("Restore") { presentPaywall() }
-                Button("Terms of service") {}
+                Link("Terms of service", destination: URL(string: "https://75glowapp.vercel.app/terms.html")!)
             }
             .buttonStyle(.plain)
-            .font(.sans(11)).foregroundStyle(AppColor.inkSoft)
+            .font(.sans(11)).foregroundStyle(AppColor.inkSoft).tint(AppColor.inkSoft)
         }
         .onAppear { presentPaywall() }
     }

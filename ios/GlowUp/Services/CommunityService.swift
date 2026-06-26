@@ -50,14 +50,21 @@ struct LeaderRow: Identifiable, Codable, Hashable {
 final class CommunityService: ObservableObject {
     static let shared = CommunityService()
 
-    @Published var posts: [FeedPost] = []
+    @Published private(set) var allPosts: [FeedPost] = []
     @Published var leaders: [LeaderRow] = []
+    @Published private(set) var blockedIDs: Set<String> = []
 
     private let db = Firestore.firestore()
     private var postsListener: ListenerRegistration?
     private var leadersListener: ListenerRegistration?
+    private let blockedKey = "community_blocked_ids"
 
-    private init() {}
+    /// Posts with blocked authors filtered out.
+    var posts: [FeedPost] { allPosts.filter { !blockedIDs.contains($0.authorID) } }
+
+    private init() {
+        blockedIDs = Set(UserDefaults.standard.stringArray(forKey: blockedKey) ?? [])
+    }
 
     func start() {
         if postsListener == nil {
@@ -66,7 +73,7 @@ final class CommunityService: ObservableObject {
                 .limit(to: 100)
                 .addSnapshotListener { [weak self] snapshot, error in
                     if let error { print("posts listener:", error.localizedDescription); return }
-                    self?.posts = snapshot?.documents.compactMap { try? $0.data(as: FeedPost.self) } ?? []
+                    self?.allPosts = snapshot?.documents.compactMap { try? $0.data(as: FeedPost.self) } ?? []
                 }
         }
         if leadersListener == nil {
@@ -112,5 +119,38 @@ final class CommunityService: ObservableObject {
         let row = LeaderRow(name: name, avatar: avatar, score: score, level: level, streak: streak)
         do { try db.collection("users").document(uid).setData(from: row, merge: true) }
         catch { print("syncProfile:", error.localizedDescription) }
+    }
+
+    // MARK: - Moderation (report / block)
+
+    /// Hide a user's content and remember the block locally.
+    func block(_ post: FeedPost) {
+        guard !post.authorID.isEmpty else { return }
+        blockedIDs.insert(post.authorID)
+        UserDefaults.standard.set(Array(blockedIDs), forKey: blockedKey)
+    }
+
+    func unblockAll() {
+        blockedIDs.removeAll()
+        UserDefaults.standard.removeObject(forKey: blockedKey)
+    }
+
+    func isBlocked(_ post: FeedPost) -> Bool { blockedIDs.contains(post.authorID) }
+
+    /// File a report to the `reports` collection for moderation review.
+    func report(_ post: FeedPost, reason: String) {
+        let reporter = Auth.auth().currentUser?.uid ?? ""
+        let data: [String: Any] = [
+            "postID": post.id ?? "",
+            "postTitle": post.title,
+            "reportedUserID": post.authorID,
+            "reportedUsername": post.username,
+            "reason": reason,
+            "reporterID": reporter,
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        db.collection("reports").addDocument(data: data) { error in
+            if let error { print("report:", error.localizedDescription) }
+        }
     }
 }

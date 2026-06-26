@@ -6,8 +6,8 @@ struct TermsGateView: View {
     var onAccept: () -> Void
     @State private var agreed = false
 
-    private let termsURL = URL(string: "https://glowup.app/terms")!
-    private let privacyURL = URL(string: "https://glowup.app/privacy")!
+    private let termsURL = URL(string: "https://75glowapp.vercel.app/terms.html")!
+    private let privacyURL = URL(string: "https://75glowapp.vercel.app/privacy.html")!
 
     var body: some View {
         ZStack {
