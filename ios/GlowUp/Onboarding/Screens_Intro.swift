@@ -37,9 +37,7 @@ struct BAPair: Identifiable {
 /// to the next pair — which replays the same sweep.
 struct BeforeAfterShowcase: View {
     private let pairs: [BAPair] = [
-        BAPair(before: "glow3",  after: "glow1",  label: "Day 1  →  Day 75"),
-        BAPair(before: "glow7",  after: "glow5",  label: "Day 1  →  Day 75"),
-        BAPair(before: "glow14", after: "glow11", label: "Day 1  →  Day 75"),
+        BAPair(before: "ba_before", after: "ba_after", label: "Day 1  →  Day 75"),
     ]
     @State private var index = 0
     @State private var split: CGFloat = 0.24
@@ -65,6 +63,7 @@ struct BeforeAfterShowcase: View {
             withAnimation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true)) { tilt = true }
         }
         .task {
+            guard pairs.count > 1 else { return }
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
                 withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
