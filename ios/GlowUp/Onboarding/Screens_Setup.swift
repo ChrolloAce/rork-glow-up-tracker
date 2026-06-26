@@ -89,18 +89,23 @@ struct ProgressMarquee: View {
     var body: some View {
         let loopWidth = CGFloat(images.count) * (itemW + spacing)
         VStack(spacing: 10) {
-            ZStack {
-                HStack(spacing: spacing) {
-                    ForEach(Array((images + images).enumerated()), id: \.offset) { _, name in
-                        Image(name).resizable().scaledToFill()
-                            .frame(width: itemW, height: 104)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(.white, lineWidth: 2))
+            // Fixed-width container; the wide moving strip lives in an overlay so it
+            // can't expand the layout (which was pushing the footer buttons out of bounds).
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 104)
+                .overlay(alignment: .leading) {
+                    HStack(spacing: spacing) {
+                        ForEach(Array((images + images).enumerated()), id: \.offset) { _, name in
+                            Image(name).resizable().scaledToFill()
+                                .frame(width: itemW, height: 104)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(.white, lineWidth: 2))
+                        }
                     }
+                    .offset(x: shift)
+                    .fixedSize()
                 }
-                .offset(x: shift)
-            }
-            .frame(height: 104)
             .clipped()
             .mask(
                 LinearGradient(colors: [.clear, .black, .black, .black, .clear],
