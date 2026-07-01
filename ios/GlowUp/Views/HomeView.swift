@@ -18,6 +18,13 @@ struct HomeView: View {
 
     private var day: Int { scrolledDay ?? viewModel.currentDay }
 
+    private enum DayState { case today, past, future }
+    private var dayState: DayState {
+        if day > viewModel.currentDay { return .future }
+        if day < viewModel.currentDay { return .past }
+        return .today
+    }
+
     var body: some View {
         GeometryReader { outer in
             // One scroll view: header is normal (interactive) content; the sheet
@@ -225,31 +232,11 @@ struct HomeView: View {
 
     private var taskContainer: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("TODAY'S HABITS")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Theme.textTertiary)
-                .tracking(1.5)
-                .padding(.top, 22)
-
-            ForEach(Array(viewModel.activeHabits.enumerated()), id: \.element.id) { index, habit in
-                ChallengeHabitCard(
-                    habit: habit,
-                    viewModel: viewModel,
-                    accent: accent,
-                    isExpanded: expandedHabit == habit.id,
-                    onExpand: {
-                        withAnimation(.easeOut(duration: 0.22)) {
-                            expandedHabit = expandedHabit == habit.id ? nil : habit.id
-                        }
-                    }
-                )
-                .opacity(appeared ? 1 : 0)
-                .offset(y: appeared ? 0 : 16)
-                .animation(.easeOut(duration: 0.4).delay(Double(index) * 0.05), value: appeared)
+            switch dayState {
+            case .today:  todayHabits
+            case .past:   pastDayView
+            case .future: futureDayView
             }
-
-            completeDaySection
-                .padding(.top, 18)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 40)
@@ -266,6 +253,102 @@ struct HomeView: View {
                 .frame(height: 38)
                 .shadow(color: Theme.glowBlue.opacity(0.16), radius: 7, x: 0, y: -1)
         }
+    }
+
+    // MARK: - Day states (today / past / future)
+
+    @ViewBuilder private var todayHabits: some View {
+        Text("TODAY'S HABITS")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Theme.textTertiary)
+            .tracking(1.5)
+            .padding(.top, 22)
+
+        ForEach(Array(viewModel.activeHabits.enumerated()), id: \.element.id) { index, habit in
+            ChallengeHabitCard(
+                habit: habit,
+                viewModel: viewModel,
+                accent: accent,
+                isExpanded: expandedHabit == habit.id,
+                onExpand: {
+                    withAnimation(.easeOut(duration: 0.22)) {
+                        expandedHabit = expandedHabit == habit.id ? nil : habit.id
+                    }
+                }
+            )
+            .opacity(appeared ? 1 : 0)
+            .offset(y: appeared ? 0 : 16)
+            .animation(.easeOut(duration: 0.4).delay(Double(index) * 0.05), value: appeared)
+        }
+
+        completeDaySection
+            .padding(.top, 18)
+    }
+
+    private var futureDayView: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "moon.stars.fill")
+                .font(.system(size: 42, weight: .light))
+                .foregroundStyle(blue)
+                .padding(.bottom, 2)
+            Text("Day \(day) isn't here yet")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(Theme.textPrimary)
+            Text("This day unlocks when you reach it.\nStay present — one day at a time. ✨")
+                .font(.system(size: 14))
+                .foregroundStyle(Theme.textSecondary)
+                .multilineTextAlignment(.center)
+            goToTodayButton
+                .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 48)
+        .padding(.horizontal, 12)
+    }
+
+    private var pastDayView: some View {
+        let done = viewModel.isDayComplete(day)
+        return VStack(spacing: 14) {
+            Image(systemName: done ? "checkmark.seal.fill" : "calendar.badge.clock")
+                .font(.system(size: 42, weight: .light))
+                .foregroundStyle(done ? Theme.sageGreen : Theme.textTertiary)
+                .padding(.bottom, 2)
+            Text("Day \(day)")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(Theme.textPrimary)
+            Text(done
+                 ? "You showed up and completed this day. 💛"
+                 : "This day has already passed.")
+                .font(.system(size: 14))
+                .foregroundStyle(Theme.textSecondary)
+                .multilineTextAlignment(.center)
+            goToTodayButton
+                .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 48)
+        .padding(.horizontal, 12)
+    }
+
+    private var goToTodayButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                scrolledDay = viewModel.currentDay
+            }
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: "arrow.uturn.backward")
+                    .font(.system(size: 14, weight: .bold))
+                Text("Go to Today")
+                    .font(.system(size: 15, weight: .bold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 22)
+            .frame(height: 50)
+            .background(Capsule().fill(accent))
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .light), trigger: day)
     }
 
     // MARK: - Complete Day

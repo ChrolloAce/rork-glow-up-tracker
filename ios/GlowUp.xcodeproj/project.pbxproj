@@ -40,22 +40,16 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		105FC57C2E9EAD3100EA8BCF /* GlowUp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = GlowUp;
 			sourceTree = "<group>";
 		};
 		105FC58C2E9EAD3200EA8BCF /* GlowUpTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = GlowUpTests;
 			sourceTree = "<group>";
 		};
 		105FC5962E9EAD3200EA8BCF /* GlowUpUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = GlowUpUITests;
 			sourceTree = "<group>";
 		};
@@ -429,10 +423,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "75 Glow";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Sync your beauty appointments with Apple Calendar.";
-				INFOPLIST_KEY_NSCalendarsUsageDescription = "Sync your beauty appointments with Apple Calendar.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take progress photos to track your glow-up journey.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your progress photos to your library.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choose progress photos from your library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -474,10 +465,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "75 Glow";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Sync your beauty appointments with Apple Calendar.";
-				INFOPLIST_KEY_NSCalendarsUsageDescription = "Sync your beauty appointments with Apple Calendar.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take progress photos to track your glow-up journey.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your progress photos to your library.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choose progress photos from your library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

@@ -41,10 +41,6 @@ struct CommunityView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
-                topBar
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-
                 header
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
@@ -60,21 +56,12 @@ struct CommunityView: View {
             Button {
                 showComposer = true
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 18, weight: .bold))
-                    Text("Post Win")
-                        .font(.system(size: 15, weight: .bold))
-                }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 20)
-                .frame(height: 54)
-                .background(
-                    Capsule().fill(
-                        LinearGradient(colors: [Theme.pink, Theme.pinkDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    )
-                )
-                .shadow(color: Theme.pink.opacity(0.45), radius: 14, x: 0, y: 8)
+                Image(systemName: "plus")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 58, height: 58)
+                    .background(Circle().fill(.black))
+                    .shadow(color: .black.opacity(0.25), radius: 14, x: 0, y: 8)
             }
             .padding(.trailing, 22)
             .padding(.bottom, 110)
@@ -166,24 +153,8 @@ struct CommunityView: View {
 
     // MARK: - Top Bar
 
-    private var topBar: some View {
-        HStack {
-            Spacer()
-            Button {
-                showLeaderboard = true
-            } label: {
-                Image(systemName: "trophy.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.glowBlue)
-                    .frame(width: 38, height: 38)
-                    .adaptiveGlass(in: Circle())
-            }
-            .sensoryFeedback(.impact(weight: .light), trigger: showLeaderboard)
-        }
-    }
-
     private var header: some View {
-        HStack {
+        HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Community")
                     .font(.system(size: 34, weight: .heavy))
@@ -193,6 +164,16 @@ struct CommunityView: View {
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
+            Button {
+                showLeaderboard = true
+            } label: {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Theme.glowBlue)
+                    .frame(width: 44, height: 44)
+                    .adaptiveGlass(in: Circle())
+            }
+            .sensoryFeedback(.impact(weight: .light), trigger: showLeaderboard)
         }
     }
 
@@ -357,9 +338,16 @@ struct PostCard: View {
                         .lineLimit(4)
                         .multilineTextAlignment(.leading)
                 }
+
+                HStack(spacing: 4) {
+                    Text("Read post")
+                        .font(.system(size: 12, weight: .semibold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 10, weight: .bold))
+                }
+                .foregroundStyle(Theme.glowBlue)
+                .padding(.top, 2)
             }
-            .contentShape(Rectangle())
-            .onTapGesture { onOpen() }
 
             HStack(spacing: 20) {
                 Button {
@@ -394,6 +382,8 @@ struct PostCard: View {
         }
         .padding(16)
         .glassCard(radius: 22)
+        .contentShape(Rectangle())
+        .onTapGesture { onOpen() }
     }
 }
 

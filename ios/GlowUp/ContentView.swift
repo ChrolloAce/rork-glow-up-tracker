@@ -22,7 +22,7 @@ struct ContentView: View {
                 ProfileView(viewModel: viewModel)
             }
         }
-        .tint(Theme.glowBlue)
+        .tint(Theme.pink)
         .preferredColorScheme(.light)
         .onAppear {
             if !viewModel.hasSelectedAvatar {

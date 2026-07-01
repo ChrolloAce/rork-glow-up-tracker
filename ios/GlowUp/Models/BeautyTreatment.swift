@@ -82,7 +82,6 @@ struct BeautyTreatment: Identifiable, Codable {
     var time: String
     var notes: String
     var repeatFrequency: RepeatFrequency
-    var calendarEventID: String? = nil
 }
 
 enum ChecklistCategory: String, CaseIterable, Identifiable, Codable, Sendable {

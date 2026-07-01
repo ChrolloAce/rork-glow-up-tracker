@@ -15,6 +15,7 @@ struct SelectChallengeView: View {
     @State private var tab: Int = 0
     @State private var localSelection: String? = nil
     @State private var detailChallenge: Challenge? = nil
+    @State private var previewChallenge: Challenge? = nil
 
     var body: some View {
         ScrollView {
@@ -39,14 +40,28 @@ struct SelectChallengeView: View {
         .navigationBarBackButtonHidden(true)
         .navigationDestination(item: $detailChallenge) { challenge in
             ChallengeDetailView(challenge: challenge) {
-                startChallenge(challenge.id)
+                startChallenge(challenge)
+            }
+        }
+        .fullScreenCover(item: $previewChallenge) { challenge in
+            ChallengePreviewView(challenge: challenge) {
+                finishAfterPreview()
             }
         }
         .onAppear { localSelection = viewModel.selectedChallengeID }
     }
 
-    private func startChallenge(_ id: String) {
-        viewModel.selectedChallengeID = id
+    /// Selecting a challenge sets it active and shows the animated intro/preview.
+    private func startChallenge(_ challenge: Challenge) {
+        viewModel.selectedChallengeID = challenge.id
+        localSelection = challenge.id
+        detailChallenge = nil
+        previewChallenge = challenge
+    }
+
+    /// "Begin Day 1" from the preview — proceed into the app.
+    private func finishAfterPreview() {
+        previewChallenge = nil
         onContinue?()
         if !isOnboarding { dismiss() }
     }

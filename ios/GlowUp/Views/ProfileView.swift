@@ -10,12 +10,12 @@ struct ProfileView: View {
     @State private var showCustomBuilder: Bool = false
     @State private var confirmSwitch: Bool = false
     @State private var confirmRestart: Bool = false
-    @State private var calendarSync = CalendarSyncService.shared
-    @State private var isImporting: Bool = false
-    @State private var importToast: String? = nil
     @State private var showLogoutConfirm: Bool = false
     @State private var showDeleteConfirm: Bool = false
     @State private var isDeleting: Bool = false
+    @State private var showReminders: Bool = false
+    @State private var showJourney: Bool = false
+    @State private var showEditProfile: Bool = false
     @EnvironmentObject private var auth: AuthService
     @Environment(\.openURL) private var openURL
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding: Bool = true
@@ -33,12 +33,28 @@ struct ProfileView: View {
                     .padding(.top, 16)
 
                 VStack(spacing: 12) {
-                    currentChallengeCard
+                    // Account
+                    VStack(spacing: 0) {
+                        SettingsRow(icon: "person.text.rectangle.fill", label: "Edit Profile") { showEditProfile = true }
+                        rowDivider
+                        SettingsRow(icon: "target", label: "Habit Goals") { showEditGoals = true }
+                        rowDivider
+                        SettingsRow(icon: "calendar", label: "Start Date") { showJourney = true }
+                    }
+                    .glassCard()
+
+                    // Challenge
                     challengeManagementCard
-                    journeyCard
-                    notificationsCard
-                    connectionsCard
+
+                    // Preferences
+                    VStack(spacing: 0) {
+                        SettingsRow(icon: "bell.fill", label: "Reminders") { showReminders = true }
+                    }
+                    .glassCard()
+
+                    // Support & legal
                     aboutCard
+
                     logoutButton
                     deleteAccountButton
                 }
@@ -66,7 +82,7 @@ struct ProfileView: View {
         .fullScreenCover(isPresented: $showChallengeDetail) {
             if let challenge = viewModel.selectedChallenge {
                 NavigationStack {
-                    ChallengeDetailView(challenge: challenge) { showChallengeDetail = false }
+                    ChallengeDetailView(challenge: challenge, isActive: true) { showChallengeDetail = false }
                 }
             }
         }
@@ -75,6 +91,26 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showCustomBuilder) {
             CustomChallengeBuilderView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showReminders) {
+            RemindersSheet(
+                morning: $remindMorning,
+                evening: $remindEvening,
+                unfinished: $remindUnfinished,
+                streak: $remindStreak
+            )
+            .presentationDetents([.medium])
+            .adaptivePresentationBackground()
+        }
+        .sheet(isPresented: $showJourney) {
+            JourneySheet(viewModel: viewModel)
+                .presentationDetents([.medium])
+                .adaptivePresentationBackground()
+        }
+        .sheet(isPresented: $showEditProfile) {
+            EditProfileSheet(viewModel: viewModel, skinType: $selectedSkinType, skinTypes: skinTypes)
+                .presentationDetents([.large])
+                .adaptivePresentationBackground()
         }
         .alert("Switch Challenge?", isPresented: $confirmSwitch) {
             Button("Switch", role: .destructive) { showChallengePicker = true }
@@ -453,107 +489,12 @@ struct ProfileView: View {
         }
     }
 
-    private var connectionsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Connections")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Theme.textPrimary)
-
-            HStack {
-                Image(systemName: "calendar")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Theme.glowBlue)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Apple Calendar")
-                        .font(.system(size: 15))
-                        .foregroundStyle(Theme.textPrimary)
-                    Text(calendarSync.isEnabled ? "Calendar connected" : "Sync to your calendar")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.textTertiary)
-                }
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { calendarSync.isEnabled },
-                    set: { newValue in
-                        if newValue {
-                            Task {
-                                let granted = await calendarSync.requestAccess()
-                                calendarSync.isEnabled = granted
-                                if granted {
-                                    await viewModel.syncAllTreatmentsToCalendar()
-                                }
-                            }
-                        } else {
-                            calendarSync.isEnabled = false
-                        }
-                    }
-                ))
-                .tint(Theme.glowBlue)
-                .labelsHidden()
-            }
-
-            if calendarSync.isEnabled {
-                Button {
-                    Task {
-                        isImporting = true
-                        let before = viewModel.treatments.count
-                        await viewModel.importFromAppleCalendar()
-                        let added = viewModel.treatments.count - before
-                        importToast = added > 0 ? "Imported \(added) appointment\(added == 1 ? "" : "s")" : "No new appointments found"
-                        isImporting = false
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        if isImporting {
-                            ProgressView().controlSize(.small).tint(Theme.pink)
-                        } else {
-                            Image(systemName: "square.and.arrow.down")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                        Text(isImporting ? "Importing…" : "Import from Calendar")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundStyle(Theme.pink)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .overlay(Capsule().stroke(Theme.pink.opacity(0.4), lineWidth: 1))
-                }
-                .disabled(isImporting)
-                .sensoryFeedback(.impact(weight: .light), trigger: isImporting)
-
-                if let toast = importToast {
-                    Text(toast)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Theme.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            }
-        }
-        .padding(18)
-        .glassCard()
+    private var rowDivider: some View {
+        Divider().opacity(0.4).padding(.leading, 52)
     }
 
     private var aboutCard: some View {
         VStack(spacing: 0) {
-            Button {
-                showAvatarPicker = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "person.crop.circle.badge.plus")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Theme.glowBlue)
-                    Text("Change Avatar")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Theme.textPrimary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.textTertiary)
-                }
-                .padding(18)
-            }
-            .sensoryFeedback(.selection, trigger: showAvatarPicker)
-
             SettingsRow(icon: "lock.shield.fill", label: "Privacy Policy") {
                 openURL(URL(string: "https://75glowapp.vercel.app/privacy.html")!)
             }
@@ -619,5 +560,201 @@ struct SettingsRow: View {
             .padding(18)
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Reminders sheet
+
+struct RemindersSheet: View {
+    @Binding var morning: Bool
+    @Binding var evening: Bool
+    @Binding var unfinished: Bool
+    @Binding var streak: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    row(icon: "sunrise.fill", label: "Morning reminder", isOn: $morning)
+                    divider
+                    row(icon: "moon.stars.fill", label: "Evening reminder", isOn: $evening)
+                    divider
+                    row(icon: "checklist", label: "Unfinished habits", isOn: $unfinished)
+                    divider
+                    row(icon: "flame.fill", label: "Streak reminder", isOn: $streak)
+                }
+                .padding(18)
+                .glassCard()
+                .padding(20)
+            }
+            .background(Theme.screenGradient.ignoresSafeArea())
+            .navigationTitle("Reminders")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }.fontWeight(.semibold).foregroundStyle(Theme.pink)
+                }
+            }
+        }
+    }
+
+    private func row(icon: String, label: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon).font(.system(size: 15)).foregroundStyle(Theme.glowBlue).frame(width: 24)
+            Text(label).font(.system(size: 16)).foregroundStyle(Theme.textPrimary)
+            Spacer()
+            Toggle("", isOn: isOn).tint(Theme.glowBlue).labelsHidden()
+        }
+        .padding(.vertical, 6)
+    }
+
+    private var divider: some View { Divider().opacity(0.4).padding(.leading, 36) }
+}
+
+// MARK: - Journey (start date) sheet
+
+struct JourneySheet: View {
+    @Bindable var viewModel: GlowViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Glow Journey")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+
+                    HStack(spacing: 12) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 14)).foregroundStyle(Theme.pink).frame(width: 24)
+                        Text("Day 1 Start Date")
+                            .font(.system(size: 15)).foregroundStyle(Theme.textPrimary)
+                        Spacer()
+                        DatePicker(
+                            "",
+                            selection: Binding(
+                                get: { viewModel.startDate },
+                                set: { viewModel.startDate = Calendar.current.startOfDay(for: $0) }
+                            ),
+                            in: ...Date(),
+                            displayedComponents: .date
+                        )
+                        .labelsHidden()
+                        .tint(Theme.pink)
+                    }
+
+                    Text("You're currently on Day \(viewModel.currentDay) of \(viewModel.totalDays).")
+                        .font(.system(size: 12)).foregroundStyle(Theme.textTertiary)
+                }
+                .padding(18)
+                .glassCard()
+                .padding(20)
+            }
+            .background(Theme.screenGradient.ignoresSafeArea())
+            .navigationTitle("Start Date")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }.fontWeight(.semibold).foregroundStyle(Theme.pink)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Edit profile sheet
+
+struct EditProfileSheet: View {
+    @Bindable var viewModel: GlowViewModel
+    @Binding var skinType: String
+    let skinTypes: [String]
+    @Environment(\.dismiss) private var dismiss
+    @State private var showAvatarPicker = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    Button { showAvatarPicker = true } label: {
+                        ZStack(alignment: .bottomTrailing) {
+                            Circle()
+                                .fill(Theme.glassBackground)
+                                .frame(width: 96, height: 96)
+                                .overlay {
+                                    Group {
+                                        if AvatarCatalog.isLocal(viewModel.avatarURL) {
+                                            Image(viewModel.avatarURL).resizable().aspectRatio(contentMode: .fill)
+                                        } else {
+                                            AsyncImage(url: URL(string: viewModel.avatarURL)) { phase in
+                                                if let image = phase.image {
+                                                    image.resizable().aspectRatio(contentMode: .fill)
+                                                } else {
+                                                    Circle().fill(Theme.glassBackground)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .allowsHitTesting(false)
+                                }
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Theme.pink.opacity(0.4), lineWidth: 2))
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(.white, Theme.pink)
+                                .background(Circle().fill(.white).frame(width: 22, height: 22))
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("NAME")
+                            .font(.system(size: 11, weight: .semibold)).tracking(1.5)
+                            .foregroundStyle(Theme.textTertiary)
+                        TextField("Your name", text: $viewModel.userName)
+                            .font(.system(size: 16))
+                            .padding(14)
+                            .background(Theme.softPink, in: .rect(cornerRadius: 14))
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("SKIN TYPE")
+                            .font(.system(size: 11, weight: .semibold)).tracking(1.5)
+                            .foregroundStyle(Theme.textTertiary)
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 8) {
+                                ForEach(skinTypes, id: \.self) { type in
+                                    Button { skinType = type } label: {
+                                        Text(type)
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(skinType == type ? .white : Theme.textSecondary)
+                                            .padding(.horizontal, 16).padding(.vertical, 10)
+                                            .background(skinType == type ? Theme.pink : Theme.softPink)
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .scrollIndicators(.hidden)
+                    }
+                }
+                .padding(20)
+            }
+            .background(Theme.screenGradient.ignoresSafeArea())
+            .navigationTitle("Edit Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }.fontWeight(.semibold).foregroundStyle(Theme.pink)
+                }
+            }
+            .sheet(isPresented: $showAvatarPicker) {
+                AvatarPickerView(selected: $viewModel.avatarURL, isFirstLaunch: false)
+                    .presentationDetents([.large])
+                    .presentationContentInteraction(.scrolls)
+            }
+        }
     }
 }

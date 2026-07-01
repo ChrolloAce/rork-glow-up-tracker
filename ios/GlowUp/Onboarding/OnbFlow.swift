@@ -45,7 +45,7 @@ enum Step: Int, CaseIterable {
     case welcome1, globe, welcome3, welcome4
     case name, hearAbout, why, idealDay, biggestChallenge
     case weight, goal, weightLoss, height, diet, buildingPlan
-    case selectChallenge, challengeDetail
+    case selectChallenge
     case saveProgress
     case dayGrid, paywall
 
@@ -218,7 +218,6 @@ struct OnboardingFlow: View {
         case .diet:             DietScreen()
         case .buildingPlan:     BuildingPlanScreen()
         case .selectChallenge:  SelectChallengeScreen()
-        case .challengeDetail:  ChallengeDetailScreen()
         case .saveProgress:     SaveProgressScreen()
         case .dayGrid:          DayGridReveal()
         case .paywall:          PaywallScreen()

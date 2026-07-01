@@ -5,7 +5,11 @@ import SwiftUI
 struct ChallengeDetailView: View {
     let challenge: Challenge
 
-    /// Called when the user commits to this challenge.
+    /// `true` when viewing the challenge you're already doing (from inside the
+    /// app) — the bottom bar becomes a simple "Done" instead of "Start".
+    var isActive: Bool = false
+
+    /// Called when the user commits to this challenge (or taps Done when active).
     var onStart: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -396,7 +400,7 @@ struct ChallengeDetailView: View {
             Button {
                 onStart()
             } label: {
-                Text("Start Challenge")
+                Text(isActive ? "Done" : "Start Challenge")
                     .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -412,14 +416,16 @@ struct ChallengeDetailView: View {
             }
             .buttonStyle(.plain)
 
-            Button { dismiss() } label: {
-                Text("Choose another challenge")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.pinkDeep)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 30)
+            if !isActive {
+                Button { dismiss() } label: {
+                    Text("Choose another challenge")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.pinkDeep)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 30)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)

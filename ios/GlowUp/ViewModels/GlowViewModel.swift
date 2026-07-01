@@ -708,42 +708,10 @@ class GlowViewModel {
 
     func addTreatment(_ treatment: BeautyTreatment) {
         treatments.append(treatment)
-        if CalendarSyncService.shared.isEnabled {
-            Task { [treatment] in
-                let id = await CalendarSyncService.shared.upsertEvent(for: treatment)
-                if let id, let idx = self.treatments.firstIndex(where: { $0.id == treatment.id }) {
-                    self.treatments[idx].calendarEventID = id
-                }
-            }
-        }
     }
 
     func deleteTreatment(_ treatment: BeautyTreatment) {
         treatments.removeAll { $0.id == treatment.id }
-        if let id = treatment.calendarEventID {
-            Task { await CalendarSyncService.shared.deleteEvent(id: id) }
-        }
-    }
-
-    /// Pulls beauty-looking events from Apple Calendar and merges them in.
-    func importFromAppleCalendar() async {
-        let imported = await CalendarSyncService.shared.importBeautyEvents()
-        var existingIDs = Set(treatments.compactMap { $0.calendarEventID })
-        for t in imported where !existingIDs.contains(t.calendarEventID ?? "") {
-            treatments.append(t)
-            if let cid = t.calendarEventID { existingIDs.insert(cid) }
-        }
-    }
-
-    /// Push every local treatment without a calendar event to Apple Calendar.
-    func syncAllTreatmentsToCalendar() async {
-        for (i, t) in treatments.enumerated() where t.calendarEventID == nil {
-            if let id = await CalendarSyncService.shared.upsertEvent(for: t) {
-                if treatments.indices.contains(i) {
-                    treatments[i].calendarEventID = id
-                }
-            }
-        }
     }
 
     func addChecklistItem(name: String, category: ChecklistCategory) {
